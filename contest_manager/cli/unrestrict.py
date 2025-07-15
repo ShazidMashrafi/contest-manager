@@ -46,12 +46,17 @@ def main():
     check_root()
     config_dir = args.config_dir or get_project_root()
     try:
-        # Remove all blacklist-based network restrictions
+        print("\n🔓 STEP 1: Removing Network Restrictions\n" + ("="*40))
+        from ..utils.blacklist_restrictor import remove_all_blacklist_iptables
         remove_all_blacklist_iptables(args.user)
-        # Remove USB storage restrictions
+        print(f"✅ Network restrictions removed for user '{args.user}'.")
+
+        print("\n🔓 STEP 2: Removing USB Storage Restrictions\n" + ("="*40))
         from ..utils.usb_restrictor import remove_usb_restrictions
         remove_usb_restrictions(args.user)
-        print(f"Restrictions removed for user '{args.user}'.")
+        print(f"✅ USB storage restrictions removed for user '{args.user}'.")
+
+        print(f"\n🎉✅ All restrictions removed for user '{args.user}'.")
         sys.exit(0)
     except KeyboardInterrupt:
         print("\nUnrestriction cancelled by user")

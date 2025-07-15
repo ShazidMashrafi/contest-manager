@@ -17,12 +17,12 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Apply contest restrictions to a user (blacklist mode)")
     parser.add_argument('user', help='Username to restrict')
-    parser.add_argument('--config-dir', type=str, help='Configuration directory path (default: /etc/contest-manager)')
+    parser.add_argument('--config-dir', type=str, help='Configuration directory path (default: config/)')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
     args = parser.parse_args()
 
     username = args.user
-    config_dir = Path(args.config_dir) if args.config_dir else Path("/etc/contest-manager")
+    config_dir = Path(args.config_dir) if args.config_dir else Path(__file__).parent.parent.parent / "config"
     blacklist_file = config_dir / "blacklist.txt"  # config_dir now should be config/
 
     print_header(f"Applying restrictions for user '{username}' (blacklist mode)")

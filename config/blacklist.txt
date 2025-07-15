@@ -14,8 +14,10 @@ baidu.com
 # AI Bots
 openai.com
 chat.openai.com
+chatgpt.com
 gemini.google.com
 claude.ai
+chatgpt.com
 anthropic.com
 perplexity.ai
 
@@ -28,6 +30,7 @@ stackexchange.com
 reddit.com
 discord.com
 medium.com
+ideone.com
 
 # Social Media (optional, for extra safety)
 facebook.com
@@ -36,6 +39,7 @@ instagram.com
 linkedin.com
 tiktok.com
 snapchat.com
+telemgram.com
 
 # File Sharing/Cloud
 dropbox.com
