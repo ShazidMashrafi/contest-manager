@@ -5,13 +5,33 @@ Contest Environment Restrict CLI
 import sys
 import os
 from pathlib import Path
-from ..utils.common import print_header, print_status, print_error, print_warning, print_step
+import subprocess
+from ..utils.restriction_controller import apply_all_restrictions
 
 
-from ..utils.usb_restrictor import apply_usb_restrictions
-from ..utils.blacklist_restrictor import block_domains_with_iptables
+
+SYSTEMD_SERVICE_NAME = "contest_restriction.service"
+SYSTEMD_TIMER_NAME = "contest_restriction.timer"
 
 
+
+def get_systemd_unit_paths():
+    service_path = f"/etc/systemd/system/{SYSTEMD_SERVICE_NAME}"
+    timer_path = f"/etc/systemd/system/{SYSTEMD_TIMER_NAME}"
+    return service_path, timer_path
+
+def write_systemd_service(username, config_dir):
+    service_path, timer_path = get_systemd_unit_paths()
+    python_exec = sys.executable
+    restrict_script = os.path.abspath(__file__)
+    service_content = f"""[Unit]\nDescription=Contest Restriction Service\nAfter=network.target\n\n[Service]\nType=oneshot\nExecStart={python_exec} {restrict_script} {username} --config-dir {config_dir}\n\n[Install]\nWantedBy=multi-user.target\n"""
+    timer_content = f"""[Unit]\nDescription=Contest Restriction Timer\n\n[Timer]\nOnBootSec=1min\nOnUnitActiveSec=30min\nUnit={SYSTEMD_SERVICE_NAME}\n\n[Install]\nWantedBy=timers.target\n"""
+    with open(service_path, "w") as f:
+        f.write(service_content)
+    with open(timer_path, "w") as f:
+        f.write(timer_content)
+    subprocess.run(["systemctl", "daemon-reload"], check=True)
+    subprocess.run(["systemctl", "enable", "--now", SYSTEMD_TIMER_NAME], check=True)
 
 def main():
     import argparse
@@ -19,34 +39,20 @@ def main():
     parser.add_argument('user', help='Username to restrict')
     parser.add_argument('--config-dir', type=str, help='Configuration directory path (default: config/)')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
+    parser.add_argument('--setup-systemd', action='store_true', help='Set up systemd service/timer for persistence')
     args = parser.parse_args()
 
     username = args.user
-    config_dir = Path(args.config_dir) if args.config_dir else Path(__file__).parent.parent.parent / "config"
-    blacklist_file = config_dir / "blacklist.txt"  # config_dir now should be config/
+    config_dir = args.config_dir if args.config_dir else str(Path(__file__).parent.parent.parent / "config")
 
-    print_header(f"Applying restrictions for user '{username}' (blacklist mode)")
-
-    # 0. Remove all previous restrictions (network and USB)
-    print_step(0, "Clearing all previous restrictions")
-    from ..utils.blacklist_restrictor import remove_all_blacklist_iptables
-    remove_all_blacklist_iptables(username)
-    from ..utils.usb_restrictor import remove_usb_restrictions
-    remove_usb_restrictions(username)
-
-    # 1. Block blacklisted domains
-    print_step(1, "Blocking blacklisted domains")
-    if not block_domains_with_iptables(username, blacklist_file):
-        print_error("Failed to apply blacklist network restrictions")
+    success = apply_all_restrictions(username, config_dir, verbose=args.verbose)
+    if not success:
         sys.exit(1)
 
-    # 2. Block USB storage devices
-    print_step(2, "Blocking USB storage devices")
-    if not apply_usb_restrictions(username):
-        print_error("Failed to apply USB restrictions")
-        sys.exit(1)
-
-    print_status(f"✅ Restrictions applied successfully for user '{username}' (blacklist mode)")
+    if args.setup_systemd:
+        print("Setting up systemd service and timer for persistent restrictions...")
+        write_systemd_service(username, config_dir)
+        print("✅ Systemd service and timer set up. Restrictions will persist and update every 30 minutes.")
 
 if __name__ == "__main__":
     main()

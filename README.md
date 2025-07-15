@@ -34,9 +34,6 @@ cd contest-manager
 sudo bash install.sh
 # Or custom base command:
 sudo bash install.sh manager
-# Example usage:
-sudo contest-manager setup --user contestant
-sudo manager setup --user contestant
 ```
 
 See [Usage Guide](USAGE.md) for all commands and details.
@@ -53,14 +50,6 @@ See [Usage Guide](USAGE.md) for all commands and details.
 
 ---
 
-
-## 📚 Documentation
-- [Install Guide](docs/INSTALL.md)
-- [Usage Guide](docs/USAGE.md)
-- [Config File Reference](config/README_config.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-
----
 
 ## 🛠️ Requirements
 - Ubuntu 18.04+ (or compatible Linux)
