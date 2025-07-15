@@ -1,54 +1,45 @@
+
 # Contest Environment Manager
 
-A robust method of setting up a PC for onsite competitive programming contests.
+A robust, modular system for setting up a PC for onsite competitive programming contests, with intuitive configuration via editable files in the `config/` folder.
 
 ---
+
+git clone <github.com/shazidmashrafi/contest-manager>
+sudo ./install.sh
+sudo contest-manager setup --user contestant
+sudo contest-manager restrict --user contestant
+contest-manager status --user contestant
+sudo contest-manager unrestrict --user contestant
 
 ## 🚀 Quick Start
 
 ```sh
-# Clone the repository
-git clone <repository-url>
+git clone <github.com/shazidmashrafi/contest-manager>
 cd contest-manager
-
-# Install (as root)
 sudo ./install.sh
-
-# Set up a contest user (default: 'participant')
-sudo contest-manager setup --user alice
-# or simply
-sudo contest-manager setup              # sets up 'participant' user
-
-# Restrict internet to whitelisted sites (default user: 'participant')
-sudo contest-manager restrict --user alice
-# or
-sudo contest-manager restrict           # restricts 'participant'
-
-# Check status (default user: 'participant')
-contest-manager status --user alice
-# or
-contest-manager status                  # checks 'participant'
-
-# Remove restrictions (default user: 'participant')
-sudo contest-manager unrestrict --user alice
-# or
-sudo contest-manager unrestrict         # removes from 'participant'
+sudo contest-manager setup --user contestant
 ```
 
+See [Usage Guide](USAGE.md) for all commands and details.
+
 ---
+
 
 ## ✨ Features
-- **Network Restrictions:** Only allow whitelisted contest sites (Squid + iptables)
-- **USB Controls:** Block USB storage, allow keyboard/mouse
-- **Smart Dependencies:** Auto-detect and allow essential CDNs/APIs
-- **Easy CLI:** One command for setup, restrict, unrestrict, and status
+- **Network Restrictions:** Block access to blacklisted sites (see `config/blacklist.txt`)
+- **USB Controls:** Block USB storage devices
+- **Easy CLI:** One command for setup, restrict, unrestrict, reset, and status
 - **Persistent & Secure:** Survives reboot, systemd integration
+- **Intuitive Config:** All user-editable lists (blacklist, package lists) are in the `config/` folder
 
 ---
+
 
 ## 📚 Documentation
 - [Install Guide](docs/INSTALL.md)
 - [Usage Guide](docs/USAGE.md)
+- [Config File Reference](config/README_config.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 ---
@@ -62,8 +53,6 @@ sudo contest-manager unrestrict         # removes from 'participant'
 
 ## 🏆 Use Cases
 - Programming contests (ICPC, IUPC, NCPC & onsite programming contests)
-- Secure online exams
-- Educational labs
 
 ---
 
