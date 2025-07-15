@@ -57,7 +57,7 @@ def install_snap_packages(snap_file, verbose=False):
             pkg_name = ' '.join(cmd[2:])
             try:
                 print(f"[snap] 🛠️ Installing: {pkg_name}")
-                subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                subprocess.run(cmd, check=True)
                 print(f"[snap] ✅ Installed: {pkg_name}")
                 installed.append(pkg_name)
             except subprocess.CalledProcessError as e:
