@@ -152,16 +152,13 @@ def main():
     args = parser.parse_args()
     check_root()
 
-    # Step 1: Create (delete and recreate) user account
-    print("\n=== Step 1: Create (delete and recreate) user account ===")
+    print("\n🧑  STEP 1: User Account\n" + ("="*40))
     if not create_contest_user(args.user):
         print(f"Failed to create contest user: {args.user}")
         sys.exit(1)
 
-    # Step 2: Add universe/multiverse repo, update apt repo, install snap, flatpak
-    print("\n=== Step 2: Add universe/multiverse repo, update apt repo, install snap, flatpak ===")
+    print("\n🗂️  STEP 2: System Repositories & Core Tools\n" + ("="*40))
     add_apt_repos(verbose=args.verbose)
-    # Add PPAs from apt.txt
     ppas = []
     if APT_TXT.exists():
         with open(APT_TXT) as f:
@@ -178,11 +175,10 @@ def main():
             subprocess.run(['add-apt-repository', '-y', f'ppa:{ppa}'], check=True)
         except Exception as e:
             print(f"Failed to add PPA: {ppa}: {e}")
-    print("Updating apt repositories...")
+    print("🔄 Updating apt repositories...")
     subprocess.run(['apt-get', 'update'], check=True)
-    # Ensure snap and flatpak are installed
     if shutil.which('snap') is None:
-        print("Installing snapd...")
+        print("📦 Installing snapd...")
         subprocess.run(['apt-get', 'install', '-y', 'snapd'], check=True)
     try:
         subprocess.run(['systemctl', 'start', 'snapd'], check=True)
@@ -190,7 +186,7 @@ def main():
         pass
     time.sleep(2)
     if shutil.which('flatpak') is None:
-        print("Installing flatpak...")
+        print("📦 Installing flatpak...")
         subprocess.run(['apt-get', 'install', '-y', 'flatpak'], check=True)
     try:
         remotes = subprocess.check_output(['flatpak', 'remotes'], text=True)
@@ -200,35 +196,29 @@ def main():
     except Exception:
         pass
 
-    # Step 3: Install apps from apt, snap, flatpak
-    print("\n=== Step 3: Install apps from apt, snap, flatpak ===")
+    print("\n💻 STEP 3: Applications\n" + ("="*40))
     install_apt_packages(APT_TXT, verbose=args.verbose)
     install_snap_packages(SNAP_TXT, verbose=args.verbose)
     install_flatpak_packages(FLATPAK_TXT, verbose=args.verbose)
 
-    # Step 4: Install VS Code extensions
-    print("\n=== Step 4: Install VS Code extensions ===")
+    print("\n🧩 STEP 4: VS Code Extensions\n" + ("="*40))
     if VSCODE_EXTENSIONS.exists():
         install_vscode_extensions(VSCODE_EXTENSIONS, user=args.user, verbose=args.verbose)
 
-    # Step 5: Properly setup file permissions (keyring, execution, etc)
-    print("\n=== Step 5: Setup file permissions and keyring ===")
+    print("\n🔑 STEP 5: Permissions & Keyring\n" + ("="*40))
     fix_permissions_and_keyring(args.user, verbose=args.verbose)
 
-    # Step 6: Disable auto update of Ubuntu system
-    print("\n=== Step 6: Disable auto update of Ubuntu system ===")
+    print("\n🚫 STEP 6: Disable System Updates\n" + ("="*40))
     from ..utils.system_utils import disable_system_updates
     disable_system_updates()
 
-    # Step 7: Cleanup
-    print("\n=== Step 7: Cleanup ===")
+    print("\n🧹 STEP 7: Cleanup\n" + ("="*40))
     cleanup_system()
 
-    # Step 8: Create backup
-    print("\n=== Step 8: Create backup ===")
+    print("\n🗄️  STEP 8: Backup\n" + ("="*40))
     create_backup(args.user, verbose=args.verbose)
 
-    print("\n✅ Setup complete!")
+    print("\n🎉✅ Setup complete!")
     sys.exit(0)
 
 if __name__ == "__main__":

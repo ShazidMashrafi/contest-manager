@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 
 def install_apt_packages(apt_file, verbose=False):
+    print("\n==================== [APT INSTALL] ====================")
     """Install apt packages listed in apt_file."""
     if not Path(apt_file).exists():
         print(f"[apt] Package list not found: {apt_file}")
@@ -40,6 +41,7 @@ def install_apt_packages(apt_file, verbose=False):
             print(f"  - {pkg}")
 
 def install_snap_packages(snap_file, verbose=False):
+    print("\n==================== [SNAP INSTALL] ===================")
     """Install snap packages listed in snap_file."""
     if not Path(snap_file).exists():
         print(f"[snap] Package list not found: {snap_file}")
@@ -68,6 +70,7 @@ def install_snap_packages(snap_file, verbose=False):
             print(f"  - {pkg}")
 
 def install_flatpak_packages(flatpak_file, verbose=False):
+    print("\n================= [FLATPAK INSTALL] ==================")
     """Install flatpak packages listed in flatpak_file."""
     if not Path(flatpak_file).exists():
         print(f"[flatpak] Package list not found: {flatpak_file}")
