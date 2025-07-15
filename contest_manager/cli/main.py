@@ -20,15 +20,11 @@ def create_parser():
         epilog="""
 Examples:
   sudo contest-manager setup                   # Set up lab PC from scratch for participant
-  sudo contest-manager setup contestant        # Set up lab PC for user "contestant"
+  sudo contest-manager setup contestant        # Set up lab PC for user \"contestant\"
   sudo contest-manager restrict                # Restrict default user (participant)
   sudo contest-manager unrestrict              # Remove restrictions for participant
-  sudo contest-manager status                  # Check status for participant
   sudo contest-manager reset                   # Reset participant account to clean state
-  sudo contest-manager add codeforces.com      # Add domain to whitelist
-  sudo contest-manager remove codeforces.com   # Remove domain from whitelist
-  sudo contest-manager list                    # List whitelisted domains
-  sudo contest-manager dependencies            # Show resolved dependencies
+  sudo contest-manager status                  # Check status for participant
         """
     )
     
@@ -66,16 +62,7 @@ Examples:
     status_parser = subparsers.add_parser('status', help='Show current restriction status')
     status_parser.add_argument('user', nargs='?', default='participant', help='Username (default: participant)')
     
-    # Whitelist management commands
-    add_parser = subparsers.add_parser('add', help='Add domain to whitelist')
-    add_parser.add_argument('domain', help='Domain to add (e.g., example.com)')
-    
-    remove_parser = subparsers.add_parser('remove', help='Remove domain from whitelist')
-    remove_parser.add_argument('domain', help='Domain to remove')
-    
-    list_parser = subparsers.add_parser('list', help='List currently whitelisted domains')
-    
-    deps_parser = subparsers.add_parser('dependencies', help='Show resolved dependencies for whitelisted domains')
+    # Deprecated commands removed
     
     return parser
 
@@ -122,26 +109,13 @@ def main():
             sys.exit(0)
 
         elif args.command == "status":
+            check_root()
             from ..cli.status import main as status_main
             sys.argv = [sys.argv[0]] + [args.user] + (["--config-dir", args.config_dir] if args.config_dir else []) + (["--verbose"] if args.verbose else [])
             status_main()
             sys.exit(0)
 
-        elif args.command == "add":
-            print("[ERROR] 'add' command is not implemented in the new structure.")
-            sys.exit(1)
-
-        elif args.command == "remove":
-            print("[ERROR] 'remove' command is not implemented in the new structure.")
-            sys.exit(1)
-
-        elif args.command == "list":
-            print("[ERROR] 'list' command is not implemented in the new structure.")
-            sys.exit(1)
-
-        elif args.command == "dependencies":
-            print("[ERROR] 'dependencies' command is not implemented in the new structure.")
-            sys.exit(1)
+        # Deprecated commands removed
 
         else:
             parser.print_help()

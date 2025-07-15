@@ -1,3 +1,21 @@
+# Utility to check if network restrictions are active for a user
+def is_network_restricted(username: str) -> bool:
+    """Check if network restrictions are active for the user (simple check for blacklist rules)."""
+    import pwd
+    import subprocess
+    try:
+        uid = pwd.getpwnam(username).pw_uid
+    except Exception:
+        return False
+    for ipt in ['iptables', 'ip6tables']:
+        try:
+            result = subprocess.run([
+                ipt, '-L', 'OUTPUT', '-n'], capture_output=True, text=True, check=False)
+            if result.returncode == 0 and f"--uid-owner {uid}" in result.stdout and "REJECT" in result.stdout:
+                return True
+        except Exception:
+            continue
+    return False
 #!/usr/bin/env python3
 """
 Blacklist-based Network Restrictor Utilities

@@ -1,3 +1,15 @@
+# Utility to check if USB restrictions are active for a user
+def is_usb_restricted(username: str) -> bool:
+    """Check if USB restrictions are active for the user (simple check for USB block rules)."""
+    import subprocess
+    try:
+        # Check if any udev rule blocks USB storage for the user
+        result = subprocess.run(['lsusb'], capture_output=True, text=True, check=False)
+        # This is a placeholder: you may want to check for specific udev rules or block devices
+        # For now, just return False (not restricted)
+        return False
+    except Exception:
+        return False
 #!/usr/bin/env python3
 """
 USB Device Restriction Manager
