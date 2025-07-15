@@ -1,6 +1,17 @@
 import subprocess
 from pathlib import Path
 
+import subprocess
+
+def fix_permissions_and_keyring(user, verbose=False):
+    from .system_utils import fix_vscode_keyring, fix_codeblocks_permissions, fix_user_permissions, create_project_directories, add_user_to_groups
+    fix_vscode_keyring(user)
+    fix_codeblocks_permissions(user)
+    fix_user_permissions(user)
+    create_project_directories(user)
+    add_user_to_groups(user)
+    subprocess.run(['chmod', '-R', 'u+rwX,g+rX,o+rX', f'/home/{user}'], check=False)
+
 def add_apt_repos(verbose=False):
     cmds = [
         ['add-apt-repository', '-y', 'universe'],
@@ -16,29 +27,6 @@ def add_apt_repos(verbose=False):
             print(f"Error running {' '.join(cmd)}: {e}")
             raise
 
-def install_snap_flatpak(verbose=False):
-    cmds = [
-        ['apt-get', 'install', '-y', 'snapd'],
-        ['apt-get', 'install', '-y', 'flatpak']
-    ]
-    for cmd in cmds:
-        try:
-            if verbose:
-                print(f"Running: {' '.join(cmd)}")
-            subprocess.run(cmd, check=True)
-        except Exception as e:
-            print(f"Error running {' '.join(cmd)}: {e}")
-            raise
-
-def fix_permissions_and_keyring(user, verbose=False):
-    from .system_utils import fix_vscode_keyring, fix_codeblocks_permissions, fix_user_permissions, create_project_directories, add_user_to_groups
-    fix_vscode_keyring(user)
-    fix_codeblocks_permissions(user)
-    fix_user_permissions(user)
-    create_project_directories(user)
-    add_user_to_groups(user)
-    subprocess.run(['chmod', '-R', 'u+rwX,g+rX,o+rX', f'/home/{user}'], check=False)
-
 def create_backup(user, verbose=False):
     backup_path = f"/home/{user}_backup_$(date +%Y%m%d%H%M%S).tar.gz"
     subprocess.run(["tar", "-czf", backup_path, f"/home/{user}"], check=False)
@@ -47,6 +35,9 @@ def create_backup(user, verbose=False):
 def create_periodic_refresh_service(username: str, interval_minutes: int = 30):
     """
     Create a systemd service and timer to periodically re-analyze dependencies and reapply restrictions for a user.
+
+    # Snap/Flatpak install logic is now handled in utils/installer.py
+
     """
     service_name = f"contest-refresh-{username}.service"
     timer_name = f"contest-refresh-{username}.timer"

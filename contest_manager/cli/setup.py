@@ -11,12 +11,18 @@ import shutil
 from pathlib import Path
 from ..utils.common import check_root, get_project_root
 from ..utils.user_manager import create_contest_user
-from ..utils.software_installer import install_vscode_extensions
-from ..utils.system_utils import cleanup_system, clean_temporary_files
-from ..utils.setup_utils import add_apt_repos, install_snap_flatpak, fix_permissions_and_keyring, create_backup
 
-INSTALL_TXT = Path(__file__).parent.parent.parent / 'install.txt'
-VSCODE_EXTENSIONS = Path(__file__).parent.parent.parent / 'vscode-extensions.txt'
+from ..utils.system_utils import cleanup_system, clean_temporary_files
+from ..utils.setup_utils import add_apt_repos, fix_permissions_and_keyring, create_backup
+from ..utils.installer import install_apt_packages, install_snap_packages, install_flatpak_packages
+from ..utils.vscode_extensions import install_vscode_extensions
+
+
+INSTALL_DIR = Path(__file__).parent.parent.parent / 'install'
+APT_TXT = INSTALL_DIR / 'apt.txt'
+SNAP_TXT = INSTALL_DIR / 'snap.txt'
+FLATPAK_TXT = INSTALL_DIR / 'flatpak.txt'
+VSCODE_EXTENSIONS = INSTALL_DIR / 'vscode-extensions.txt'
 
 
 
@@ -140,32 +146,89 @@ def install_packages_from_file(file_path, verbose=False):
             print(f"  - {pkg}")
 
 
+
 def main():
     parser = create_parser()
     args = parser.parse_args()
     check_root()
-    # 1. Create (and if exists, delete and recreate) user
+
+    # Step 1: Create (delete and recreate) user account
+    print("\n=== Step 1: Create (delete and recreate) user account ===")
     if not create_contest_user(args.user):
         print(f"Failed to create contest user: {args.user}")
         sys.exit(1)
-    # 2. Add repos, update, install snap/flatpak
+
+    # Step 2: Add universe/multiverse repo, update apt repo, install snap, flatpak
+    print("\n=== Step 2: Add universe/multiverse repo, update apt repo, install snap, flatpak ===")
     add_apt_repos(verbose=args.verbose)
-    install_snap_flatpak(verbose=args.verbose)
-    # 3. Install packages from install.txt
-    install_packages_from_file(INSTALL_TXT, verbose=args.verbose)
-    # 4. Install VS Code extensions
+    # Add PPAs from apt.txt
+    ppas = []
+    if APT_TXT.exists():
+        with open(APT_TXT) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                if '(' in line and 'ppa:' in line:
+                    ppa = line.split('ppa:')[1].strip(') ')
+                    ppas.append(ppa)
+    for ppa in ppas:
+        try:
+            print(f"Adding PPA: {ppa}")
+            subprocess.run(['add-apt-repository', '-y', f'ppa:{ppa}'], check=True)
+        except Exception as e:
+            print(f"Failed to add PPA: {ppa}: {e}")
+    print("Updating apt repositories...")
+    subprocess.run(['apt-get', 'update'], check=True)
+    # Ensure snap and flatpak are installed
+    if shutil.which('snap') is None:
+        print("Installing snapd...")
+        subprocess.run(['apt-get', 'install', '-y', 'snapd'], check=True)
+    try:
+        subprocess.run(['systemctl', 'start', 'snapd'], check=True)
+    except Exception:
+        pass
+    time.sleep(2)
+    if shutil.which('flatpak') is None:
+        print("Installing flatpak...")
+        subprocess.run(['apt-get', 'install', '-y', 'flatpak'], check=True)
+    try:
+        remotes = subprocess.check_output(['flatpak', 'remotes'], text=True)
+        if 'flathub' not in remotes:
+            print("Adding Flathub remote to Flatpak...")
+            subprocess.run(['flatpak', 'remote-add', '--if-not-exists', 'flathub', 'https://flathub.org/repo/flathub.flatpakrepo'], check=True)
+    except Exception:
+        pass
+
+    # Step 3: Install apps from apt, snap, flatpak
+    print("\n=== Step 3: Install apps from apt, snap, flatpak ===")
+    install_apt_packages(APT_TXT, verbose=args.verbose)
+    install_snap_packages(SNAP_TXT, verbose=args.verbose)
+    install_flatpak_packages(FLATPAK_TXT, verbose=args.verbose)
+
+    # Step 4: Install VS Code extensions
+    print("\n=== Step 4: Install VS Code extensions ===")
     if VSCODE_EXTENSIONS.exists():
-        install_vscode_extensions(args.user)
-    # 5. Fix permissions and keyring
+        install_vscode_extensions(VSCODE_EXTENSIONS, user=args.user, verbose=args.verbose)
+
+    # Step 5: Properly setup file permissions (keyring, execution, etc)
+    print("\n=== Step 5: Setup file permissions and keyring ===")
     fix_permissions_and_keyring(args.user, verbose=args.verbose)
-    # 6. Disable auto updates
+
+    # Step 6: Disable auto update of Ubuntu system
+    print("\n=== Step 6: Disable auto update of Ubuntu system ===")
     from ..utils.system_utils import disable_system_updates
     disable_system_updates()
-    # 7. Cleanup
+
+    # Step 7: Cleanup
+    print("\n=== Step 7: Cleanup ===")
     cleanup_system()
-    # 8. Backup
+
+    # Step 8: Create backup
+    print("\n=== Step 8: Create backup ===")
     create_backup(args.user, verbose=args.verbose)
-    print("Setup complete!")
+
+    print("\n✅ Setup complete!")
     sys.exit(0)
 
 if __name__ == "__main__":

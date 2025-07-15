@@ -1,0 +1,16 @@
+# List of apt packages to install
+# One package name per line, as you would use with apt-get install
+
+# You can also add PPAs using lines like:
+# [package](ppa:[ppa-link])
+
+build-essential
+gcc
+g++
+gdb
+python3
+openjdk-17-jdk
+micro
+codeblocks
+grub-customizer(ppa:danielrichter2007/grub-customizer)
+firefox
