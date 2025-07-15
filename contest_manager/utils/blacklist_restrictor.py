@@ -47,7 +47,31 @@ def block_domains_with_iptables(username: str, blacklist_file: Path) -> bool:
     if not domains:
         print_warning("Blacklist is empty. No domains will be blocked.")
         return True
+
+    # Common country TLDs for major services
+    country_tlds = [
+        'com', 'co.in', 'com.bd', 'co.uk', 'ca', 'com.au', 'de', 'fr', 'co.jp', 'ru', 'it', 'es', 'nl', 'com.sg', 'com.hk'
+    ]
+    # Domains for which to expand TLDs
+    tld_expand = {'google', 'bing', 'yahoo'}
+
+    expanded_domains = set()
     for domain in domains:
+        expanded_domains.add(domain)
+        # Add www. subdomain
+        if not domain.startswith('www.'):
+            expanded_domains.add(f"www.{domain}")
+        # Expand TLDs for selected services
+        for service in tld_expand:
+            if domain.startswith(service + ".") or domain == service:
+                for tld in country_tlds:
+                    expanded_domains.add(f"{service}.{tld}")
+                    expanded_domains.add(f"www.{service}.{tld}")
+        # Add string match for subdomains (catch all)
+        if '.' in domain:
+            expanded_domains.add(f".{domain}")
+
+    for domain in expanded_domains:
         # Block by string match (HTTP/S fallback)
         for ipt in ['iptables', 'ip6tables']:
             try:
