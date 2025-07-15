@@ -17,7 +17,7 @@ sudo contest-manager unrestrict --user contestant
 ```sh
 git clone <github.com/shazidmashrafi/contest-manager>
 cd contest-manager
-sudo ./install.sh
+sudo bash install.sh
 sudo contest-manager setup --user contestant
 ```
 
