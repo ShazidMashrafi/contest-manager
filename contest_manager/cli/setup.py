@@ -216,6 +216,8 @@ def main():
 
     print("\n🧹 STEP 7: Cleanup\n" + ("="*40))
     cleanup_system()
+    print("Running: sudo apt autoremove -y")
+    subprocess.run(["apt", "autoremove", "-y"], check=True)
 
     print("\n🗄️  STEP 8: Backup\n" + ("="*40))
     create_backup(args.user, verbose=args.verbose)
