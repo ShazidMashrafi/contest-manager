@@ -31,7 +31,7 @@ def install_snap_flatpak(verbose=False):
             raise
 
 def fix_permissions_and_keyring(user, verbose=False):
-    from ..system_utils import fix_vscode_keyring, fix_codeblocks_permissions, fix_user_permissions, create_project_directories, add_user_to_groups
+    from .system_utils import fix_vscode_keyring, fix_codeblocks_permissions, fix_user_permissions, create_project_directories, add_user_to_groups
     fix_vscode_keyring(user)
     fix_codeblocks_permissions(user)
     fix_user_permissions(user)

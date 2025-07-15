@@ -5,7 +5,6 @@ Contest Environment Reset CLI
 
 import sys
 import argparse
-from ..core.manager import ContestManager
 from ..utils.common import check_root, get_project_root
 
 
@@ -47,7 +46,6 @@ def main():
     
     # Initialize the manager
     config_dir = args.config_dir or get_project_root()
-    manager = ContestManager(config_dir=config_dir)
     
     try:
         success = manager.reset_user(args.user)

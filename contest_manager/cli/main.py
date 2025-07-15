@@ -8,7 +8,6 @@ import os
 import argparse
 from pathlib import Path
 
-from ..core.manager import ContestManager
 from ..utils.common import check_root, get_project_root
 
 
@@ -90,62 +89,64 @@ def main():
         parser.print_help()
         sys.exit(1)
     
-    # Initialize the manager
-    config_dir = args.config_dir or get_project_root()
-    manager = ContestManager(config_dir=config_dir)
+
     
     try:
-        # Route commands
+        # Route commands to submodules
         if args.command == "setup":
             check_root()
-            success = manager.setup_user(args.user)
-            sys.exit(0 if success else 1)
-        
+            from ..cli.setup import main as setup_main
+            sys.argv = [sys.argv[0]] + [args.user] + (["--config-dir", args.config_dir] if args.config_dir else []) + (["--verbose"] if args.verbose else [])
+            setup_main()
+            sys.exit(0)
+
         elif args.command == "reset":
             check_root()
             from ..cli.reset import main as reset_main
             sys.argv = [sys.argv[0]] + [args.user] + (["--config-dir", args.config_dir] if args.config_dir else []) + (["--verbose"] if args.verbose else [])
             reset_main()
             sys.exit(0)
-        
+
         elif args.command == "restrict":
             check_root()
             from ..cli.restrict import main as restrict_main
-            sys.argv = [sys.argv[0]] + [args.user] + (['--config-dir', args.config_dir] if args.config_dir else []) + (['--verbose'] if args.verbose else [])
+            sys.argv = [sys.argv[0]] + [args.user] + (["--config-dir", args.config_dir] if args.config_dir else []) + (["--verbose"] if args.verbose else [])
             restrict_main()
             sys.exit(0)
-        
+
         elif args.command == "unrestrict":
             check_root()
-            success = manager.remove_restrictions(args.user)
-            sys.exit(0 if success else 1)
-        
+            from ..cli.unrestrict import main as unrestrict_main
+            sys.argv = [sys.argv[0]] + [args.user] + (["--config-dir", args.config_dir] if args.config_dir else []) + (["--verbose"] if args.verbose else [])
+            unrestrict_main()
+            sys.exit(0)
+
         elif args.command == "status":
-            success = manager.show_status(args.user)
-            sys.exit(0 if success else 1)
-        
+            from ..cli.status import main as status_main
+            sys.argv = [sys.argv[0]] + [args.user] + (["--config-dir", args.config_dir] if args.config_dir else []) + (["--verbose"] if args.verbose else [])
+            status_main()
+            sys.exit(0)
+
         elif args.command == "add":
-            check_root()
-            success = manager.add_domain(args.domain)
-            sys.exit(0 if success else 1)
-        
+            print("[ERROR] 'add' command is not implemented in the new structure.")
+            sys.exit(1)
+
         elif args.command == "remove":
-            check_root()
-            success = manager.remove_domain(args.domain)
-            sys.exit(0 if success else 1)
-        
+            print("[ERROR] 'remove' command is not implemented in the new structure.")
+            sys.exit(1)
+
         elif args.command == "list":
-            manager.show_domains()
-            sys.exit(0)
-        
+            print("[ERROR] 'list' command is not implemented in the new structure.")
+            sys.exit(1)
+
         elif args.command == "dependencies":
-            manager.show_dependencies()
-            sys.exit(0)
-        
+            print("[ERROR] 'dependencies' command is not implemented in the new structure.")
+            sys.exit(1)
+
         else:
             parser.print_help()
             sys.exit(1)
-    
+
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")
         sys.exit(1)

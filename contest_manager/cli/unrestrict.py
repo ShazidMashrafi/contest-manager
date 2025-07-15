@@ -7,7 +7,6 @@ import sys
 import argparse
 import subprocess
 import pwd
-from ..core.manager import ContestManager
 from ..utils.common import check_root, get_project_root
 
 
@@ -63,7 +62,6 @@ def main():
     args = parser.parse_args()
     check_root()
     config_dir = args.config_dir or get_project_root()
-    manager = ContestManager(config_dir=config_dir)
     try:
         # Remove all iptables rules for the user
         remove_all_iptables(args.user)
