@@ -23,7 +23,7 @@ def main():
 
     username = args.user
     config_dir = Path(args.config_dir) if args.config_dir else Path("/etc/contest-manager")
-    blacklist_file = config_dir / "blacklist.txt"
+    blacklist_file = config_dir / "blacklist.txt"  # config_dir now should be config/
 
     print_header(f"Applying restrictions for user '{username}' (blacklist mode)")
 

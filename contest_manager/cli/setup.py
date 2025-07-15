@@ -18,11 +18,13 @@ from ..utils.installer import install_apt_packages, install_snap_packages, insta
 from ..utils.vscode_extensions import install_vscode_extensions
 
 
-INSTALL_DIR = Path(__file__).parent.parent.parent / 'install'
-APT_TXT = INSTALL_DIR / 'apt.txt'
-SNAP_TXT = INSTALL_DIR / 'snap.txt'
-FLATPAK_TXT = INSTALL_DIR / 'flatpak.txt'
-VSCODE_EXTENSIONS = INSTALL_DIR / 'vscode-extensions.txt'
+
+# Use config directory for user-editable lists
+CONFIG_DIR = Path(__file__).parent.parent.parent / 'config'
+APT_TXT = CONFIG_DIR / 'apt.txt'
+SNAP_TXT = CONFIG_DIR / 'snap.txt'
+FLATPAK_TXT = CONFIG_DIR / 'flatpak.txt'
+VSCODE_EXTENSIONS = CONFIG_DIR / 'vscode-extensions.txt'
 
 
 
