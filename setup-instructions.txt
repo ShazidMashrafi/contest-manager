@@ -1,8 +1,0 @@
-1. Create (delete and receate) a user account
-2. Add universe and multiverse repo, update the apt repo, install snap, flatpak.
-3. Install apps from #file:install.txt , first try apt, then snap then flatpak
-4. Install vscode extentions from #file:vscode-extensions.txt 
-5. Properly setup file persmissions to handlle the errors like keyring error in vscode and others give execution permissons
-6. Disable auto update of ubuntu system. 
-7. clean up
-8. Create backup

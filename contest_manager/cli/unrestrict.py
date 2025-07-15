@@ -35,25 +35,8 @@ def create_parser():
     return parser
 
 
-def remove_all_iptables(user):
-    """Remove all iptables rules and custom chains for the user."""
-    try:
-        uid = pwd.getpwnam(user).pw_uid
-        chain_out = f"CONTEST_{user.upper()}_OUT"
-        # Remove OUTPUT jump
-        subprocess.run(['iptables', '-D', 'OUTPUT', '-m', 'owner', '--uid-owner', str(uid), '-j', chain_out], check=False)
-        subprocess.run(['ip6tables', '-D', 'OUTPUT', '-m', 'owner', '--uid-owner', str(uid), '-j', chain_out], check=False)
-        # Flush and delete custom chains
-        subprocess.run(['iptables', '-F', chain_out], check=False)
-        subprocess.run(['iptables', '-X', chain_out], check=False)
-        subprocess.run(['ip6tables', '-F', chain_out], check=False)
-        subprocess.run(['ip6tables', '-X', chain_out], check=False)
-        # Remove any remaining REJECT rules
-        subprocess.run(['iptables', '-D', 'OUTPUT', '-m', 'owner', '--uid-owner', str(uid), '-j', 'REJECT'], check=False)
-        subprocess.run(['ip6tables', '-D', 'OUTPUT', '-m', 'owner', '--uid-owner', str(uid), '-j', 'REJECT'], check=False)
-        print(f"✅ All iptables rules removed for user '{user}'")
-    except Exception as e:
-        print(f"⚠️  Failed to remove all iptables rules for user '{user}': {e}")
+
+from ..utils.blacklist_restrictor import remove_all_blacklist_iptables
 
 
 def main():
@@ -63,12 +46,11 @@ def main():
     check_root()
     config_dir = args.config_dir or get_project_root()
     try:
-        # Remove all iptables rules for the user
-        remove_all_iptables(args.user)
-        # Remove USB restrictions
-        from ..utils.usb_restrictor import USBRestrictor
-        usb_restrictor = USBRestrictor(args.user)
-        usb_restrictor.remove_usb_restrictions()
+        # Remove all blacklist-based network restrictions
+        remove_all_blacklist_iptables(args.user)
+        # Remove USB storage restrictions
+        from ..utils.usb_restrictor import remove_usb_restrictions
+        remove_usb_restrictions(args.user)
         print(f"Restrictions removed for user '{args.user}'.")
         sys.exit(0)
     except KeyboardInterrupt:

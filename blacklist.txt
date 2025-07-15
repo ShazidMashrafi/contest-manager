@@ -1,0 +1,46 @@
+# Contest Environment Manager - Blacklisted Sites
+# Add one domain per line
+# Comments start with #
+
+# Search Engines
+google.com
+youtube.com
+bing.com
+duckduckgo.com
+yahoo.com
+yandex.com
+baidu.com
+
+# AI Bots
+openai.com
+chat.openai.com
+gemini.google.com
+claude.ai
+anthropic.com
+perplexity.ai
+
+# Code Hosting/Forums
+github.com
+gitlab.com
+bitbucket.org
+stackoverflow.com
+stackexchange.com
+reddit.com
+discord.com
+medium.com
+
+# Social Media (optional, for extra safety)
+facebook.com
+twitter.com
+instagram.com
+linkedin.com
+tiktok.com
+snapchat.com
+
+# File Sharing/Cloud
+dropbox.com
+drive.google.com
+onedrive.com
+mega.nz
+
+# Add more as needed for your contest
