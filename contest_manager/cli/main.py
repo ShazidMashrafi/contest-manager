@@ -103,13 +103,17 @@ def main():
         
         elif args.command == "reset":
             check_root()
-            success = manager.reset_user(args.user)
-            sys.exit(0 if success else 1)
+            from ..cli.reset import main as reset_main
+            sys.argv = [sys.argv[0]] + [args.user] + (["--config-dir", args.config_dir] if args.config_dir else []) + (["--verbose"] if args.verbose else [])
+            reset_main()
+            sys.exit(0)
         
         elif args.command == "restrict":
             check_root()
-            success = manager.apply_restrictions(args.user)
-            sys.exit(0 if success else 1)
+            from ..cli.restrict import main as restrict_main
+            sys.argv = [sys.argv[0]] + [args.user] + (['--config-dir', args.config_dir] if args.config_dir else []) + (['--verbose'] if args.verbose else [])
+            restrict_main()
+            sys.exit(0)
         
         elif args.command == "unrestrict":
             check_root()

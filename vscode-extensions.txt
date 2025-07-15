@@ -1,0 +1,5 @@
+# List of VS Code extensions to install (one per line)
+
+ms-vscode.cpptools
+ms-python.python
+redhat.java
