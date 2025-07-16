@@ -12,8 +12,7 @@ from pathlib import Path
 from ..utils.common import check_root, get_project_root
 from ..utils.user_manager import create_contest_user
 
-from ..utils.system_utils import cleanup_system, clean_temporary_files
-from ..utils.setup_utils import add_apt_repos, fix_permissions_and_keyring, create_backup
+from ..utils.utils import cleanup_system, clean_temporary_files, add_apt_repos, fix_permissions_and_keyring, create_backup
 from ..utils.installer import install_apt_packages, install_snap_packages, install_flatpak_packages
 from ..utils.vscode_extensions import install_vscode_extensions
 
@@ -211,7 +210,7 @@ def main():
     fix_permissions_and_keyring(args.user, verbose=args.verbose)
 
     print("\n🚫 STEP 6: Disable System Updates\n" + ("="*40))
-    from ..utils.system_utils import disable_system_updates
+    from ..utils.utils import disable_system_updates
     disable_system_updates()
 
     print("\n🧹 STEP 7: Cleanup\n" + ("="*40))
