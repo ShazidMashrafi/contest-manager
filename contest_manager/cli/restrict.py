@@ -6,11 +6,9 @@ import sys
 import argparse
 from pathlib import Path
 
-# Import utility functions (to be implemented/extended in utils)
-from ..utils.common import check_root
-from ..utils.system_utils import remove_old_restrictions, persist_restrictions, schedule_ip_update
-from ..utils.usb_restrictor import restrict_usb_storage
-from ..utils.blacklist_restrictor import restrict_internet
+from ..utils.common import *
+from ..utils.internet_handler import *
+from ..utils.usb_handler import *
 
 CONFIG_DIR = Path(__file__).parent.parent.parent / 'config'
 BLACKLIST_TXT = CONFIG_DIR / 'blacklist.txt'
@@ -37,7 +35,10 @@ def main():
     check_root()
 
     print("\n🧹 STEP 1: Remove Previous Restrictions\n" + ("="*40))
-    remove_old_restrictions(args.user, verbose=args.verbose)
+    print("Removing internet restriction...")
+    unrestrict_internet(args.user, BLACKLIST_TXT, verbose=args.verbose)
+    print("Removing USB restriction...")
+    unrestrict_usb_storage_device(args.user, verbose=args.verbose)
     print("✅ Previous restrictions removed.\n")
 
     print("\n🌐 STEP 2: Restrict Internet Access\n" + ("="*40))
@@ -45,16 +46,15 @@ def main():
     print("✅ Internet access restricted.\n")
 
     print("\n🔌 STEP 3: Block USB Storage Devices\n" + ("="*40))
-    restrict_usb_storage(args.user, verbose=args.verbose)
+    restrict_usb_storage_device(args.user, verbose=args.verbose)
     print("✅ USB storage devices blocked.\n")
 
-    print("\n🔒 STEP 4: Make Restrictions Persistent\n" + ("="*40))
-    persist_restrictions(args.user, verbose=args.verbose)
-    print("✅ Restrictions persistence setup.\n")
-
-    print("\n⏰ STEP 5: Schedule IP Block Updates\n" + ("="*40))
-    schedule_ip_update(args.user, BLACKLIST_TXT, verbose=args.verbose)
-    print("✅ IP block update scheduled.\n")
+    print("\n⏰ STEP 4: Persisting Restrictions\n" + ("="*40))
+    print("Persisting internet restrictions...")
+    persist_internet_restrictions(args.user)
+    print("Persisting USB restrictions...")
+    persist_usb_restrictions(args.user)
+    print("✅ Restrictions persisted successfully!\n")
 
     print("\n🎉✅ Restrictions applied successfully!")
     sys.exit(0)
