@@ -4,7 +4,7 @@ User management utilities for contest environment.
 """
 
 import os
-from .common import run_command, user_exists, ensure_user_can_execute
+from .common import *
 
 
 def create_contest_user(user):
