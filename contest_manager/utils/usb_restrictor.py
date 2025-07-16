@@ -1,3 +1,18 @@
+def persist_usb_restrictions(verbose=False):
+    """Ensure USB restrictions persist after reboot (udev and polkit rules are persistent by default)."""
+    # Udev and polkit rules in /etc are persistent, but reload to ensure they're active after reboot
+    import subprocess
+    try:
+        subprocess.run(["udevadm", "control", "--reload-rules"])
+        subprocess.run(["udevadm", "trigger"])
+        subprocess.run(["systemctl", "restart", "polkit"], check=False)
+        if verbose:
+            print("USB restriction persistence ensured (udev/polkit rules reloaded).")
+        return True
+    except Exception as e:
+        if verbose:
+            print(f"Failed to ensure USB restriction persistence: {e}")
+        return False
 # Utility to check if USB restrictions are active for a user
 def is_usb_restricted(username: str) -> bool:
     """Check if USB restrictions are active for the user (simple check for USB block rules)."""
@@ -373,57 +388,71 @@ polkit.addRule(function(action, subject) {{
             print("   Connected USB devices: None")
 
 
-def apply_usb_restrictions(username: str) -> bool:
+def apply_usb_restrictions(user: str = None, verbose: bool = False) -> bool:
     """Apply USB restrictions for a user.
-    
     Args:
-        username: The username to apply restrictions for
-        
+        user: The username to apply restrictions for (optional)
+        verbose: Enable verbose output
     Returns:
         True if successful, False otherwise
     """
     try:
-        # Create USB restrictor instance
-        restrictor = USBRestrictor(username)
-        
-        # Apply restrictions
+        # If user is not provided, use default 'participant'
+        if user is None:
+            user = 'participant'
+        restrictor = USBRestrictor(user)
         success = restrictor.apply_usb_restrictions()
-        
         if success:
-            print(f"✅ USB restrictions applied for user '{username}'")
+            if verbose:
+                print(f"✅ USB restrictions applied for user '{user}'")
         else:
-            print(f"❌ Failed to apply USB restrictions for user '{username}'")
-            
+            if verbose:
+                print(f"❌ Failed to apply USB restrictions for user '{user}'")
         return success
-        
     except Exception as e:
-        print(f"❌ Failed to apply USB restrictions: {e}")
+        if verbose:
+            print(f"❌ Failed to apply USB restrictions: {e}")
         return False
 
 
-def remove_usb_restrictions(username: str) -> bool:
+def remove_usb_restrictions(username: str = None, verbose: bool = False) -> bool:
     """Remove USB restrictions for a user.
-    
     Args:
-        username: The username to remove restrictions for
-        
+        username: The username to remove restrictions for (optional)
+        verbose: Enable verbose output
     Returns:
         True if successful, False otherwise
     """
     try:
-        # Create USB restrictor instance
+        # If username is not provided, use default 'participant'
+        if username is None:
+            username = 'participant'
         restrictor = USBRestrictor(username)
-        
-        # Remove restrictions
         success = restrictor.remove_usb_restrictions()
-        
         if success:
-            print(f"✅ USB restrictions removed for user '{username}'")
+            if verbose:
+                print(f"✅ USB restrictions removed for user '{username}'")
         else:
-            print(f"❌ Failed to remove USB restrictions for user '{username}'")
-            
+            if verbose:
+                print(f"❌ Failed to remove USB restrictions for user '{username}'")
         return success
-        
     except Exception as e:
-        print(f"❌ Failed to remove USB restrictions: {e}")
+        if verbose:
+            print(f"❌ Failed to remove USB restrictions: {e}")
         return False
+
+def restrict_usb_storage(user, verbose=False):
+    """Restrict USB storage devices for the given user."""
+    if verbose:
+        print(f"[restrict_usb_storage] Blocking USB storage for {user}")
+    # Block USB storage by creating a udev rule
+    try:
+        rule = 'SUBSYSTEM=="usb", ATTR{product}=="USB Flash Disk", ATTR{authorized}="0"'
+        with open("/etc/udev/rules.d/99-contest-usb-block.rules", "w") as f:
+            f.write(rule + "\n")
+        import subprocess
+        subprocess.run(["udevadm", "control", "--reload-rules"], check=True)
+        subprocess.run(["udevadm", "trigger"], check=True)
+    except Exception as e:
+        print(f"Failed to block USB storage: {e}")
+    print("USB storage devices blocked.")

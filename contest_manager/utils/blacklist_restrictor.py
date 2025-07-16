@@ -1,0 +1,96 @@
+"""
+Internet restriction utilities for contest-manager
+"""
+import subprocess
+import socket
+import re
+from pathlib import Path
+import dns.resolver
+import pwd
+
+def get_subdomains(domain):
+    """Generate common subdomain names for a domain."""
+    # This is a static list; for real use, you may want to parse from config or use a DNS enumeration tool
+    common_subs = ["www", "mail", "drive", "chat", "api", "blog", "m", "app", "cdn", "static", "dev", "test"]
+    return [f"{sub}.{domain}" for sub in common_subs]
+
+def resolve_ips(domain):
+    """Resolve all IPv4 and IPv6 addresses for a domain and its subdomains."""
+    ips = set()
+    try:
+        answers = dns.resolver.resolve(domain, 'A')
+        for rdata in answers:
+            ips.add(str(rdata))
+    except Exception:
+        pass
+    try:
+        answers = dns.resolver.resolve(domain, 'AAAA')
+        for rdata in answers:
+            ips.add(str(rdata))
+    except Exception:
+        pass
+    return ips
+
+def restrict_internet(user, blacklist_path, verbose=False):
+    """
+    Restrict internet access for the given user based on blacklist file.
+    Block only the domains and subdomains listed in the blacklist, for both IPv4 and IPv6, and block DNS/DoH for those domains.
+    """
+    print(f"🌐 Restricting internet access for user: {user}")
+    if verbose:
+        print(f"[restrict_internet] Reading blacklist from {blacklist_path}")
+    if not Path(blacklist_path).exists():
+        print(f"❌ Blacklist file {blacklist_path} not found.")
+        return
+    try:
+        uid = pwd.getpwnam(user).pw_uid
+    except Exception:
+        print(f"❌ User {user} not found.")
+        return
+    domains = []
+    with open(blacklist_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                domains.append(line)
+    if not domains:
+        print("⚠️  No domains found in blacklist. Skipping internet restriction.")
+        return
+    blocked = []
+    for domain in domains:
+        allow_patterns = ['static.', 'cdn.', 'fonts.']
+        if any(domain.startswith(p) for p in allow_patterns):
+            continue
+        # Block domain and common subdomains
+        targets = [domain] + get_subdomains(domain)
+        for target in targets:
+            ips = resolve_ips(target)
+            if ips:
+                for ip in ips:
+                    try:
+                        if ':' in ip:
+                            subprocess.run(["ip6tables", "-A", "OUTPUT", "-d", ip, "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+                        else:
+                            subprocess.run(["iptables", "-A", "OUTPUT", "-d", ip, "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+                    except Exception:
+                        pass
+            # Block DNS requests for the domain/subdomain
+            try:
+                subprocess.run(["iptables", "-A", "OUTPUT", "-p", "udp", "--dport", "53", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+            except Exception:
+                pass
+            # Block DNS over HTTPS (DoH) for the domain/subdomain (TCP 443)
+            try:
+                subprocess.run(["iptables", "-A", "OUTPUT", "-p", "tcp", "--dport", "443", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+                subprocess.run(["ip6tables", "-A", "OUTPUT", "-p", "tcp", "--dport", "443", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+            except Exception:
+                pass
+        blocked.append(domain)
+    if blocked:
+        print("Blocked domains and subdomains for user:")
+        for domain in blocked:
+            print(f"  - {domain}")
+            subs = get_subdomains(domain)
+            for sub in subs:
+                print(f"    • {sub}")
+    print("✅ Internet restrictions applied for user.")

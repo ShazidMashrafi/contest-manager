@@ -3,74 +3,61 @@
 Contest Environment Restrict CLI
 """
 import sys
+import argparse
 from pathlib import Path
-from ..utils.squid_restrictor import generate_squid_acl, write_squid_conf, reload_squid, setup_iptables_redirect, remove_squid_restrictions
-from ..utils.usb_restrictor import apply_usb_restrictions, remove_usb_restrictions
-import subprocess
 
-SYSTEMD_SERVICE_NAME = "contest_restriction.service"
-SYSTEMD_TIMER_NAME = "contest_restriction.timer"
+# Import utility functions (to be implemented/extended in utils)
+from ..utils.common import check_root
+from ..utils.system_utils import remove_old_restrictions, persist_restrictions, schedule_ip_update
+from ..utils.usb_restrictor import restrict_usb_storage
+from ..utils.blacklist_restrictor import restrict_internet
 
+CONFIG_DIR = Path(__file__).parent.parent.parent / 'config'
+BLACKLIST_TXT = CONFIG_DIR / 'blacklist.txt'
 
-
-def get_systemd_unit_paths():
-    service_path = f"/etc/systemd/system/{SYSTEMD_SERVICE_NAME}"
-    timer_path = f"/etc/systemd/system/{SYSTEMD_TIMER_NAME}"
-    return service_path, timer_path
-
-def write_systemd_service(username, config_dir):
-    service_path, timer_path = get_systemd_unit_paths()
-    python_exec = sys.executable
-    restrict_script = __file__
-    service_content = f"""[Unit]\nDescription=Contest Restriction Service\nAfter=network.target\n\n[Service]\nType=oneshot\nExecStart={python_exec} {restrict_script} {username} --config-dir {config_dir}\n\n[Install]\nWantedBy=multi-user.target\n"""
-    timer_content = f"""[Unit]\nDescription=Contest Restriction Timer\n\n[Timer]\nOnBootSec=1min\nOnUnitActiveSec=30min\nUnit={SYSTEMD_SERVICE_NAME}\n\n[Install]\nWantedBy=timers.target\n"""
-    with open(service_path, "w") as f:
-        f.write(service_content)
-    with open(timer_path, "w") as f:
-        f.write(timer_content)
-    subprocess.run(["systemctl", "daemon-reload"], check=True)
-    subprocess.run(["systemctl", "enable", "--now", SYSTEMD_TIMER_NAME], check=True)
-
-def remove_all_restrictions(username):
-    remove_squid_restrictions()
-    remove_usb_restrictions(username)
+def create_parser():
+    parser = argparse.ArgumentParser(
+        description="Restrict contest user environment (network, USB, persistent)",
+        prog="contest-restrict"
+    )
+    parser.add_argument(
+        'user', nargs='?', default='participant', help='Username to restrict (default: participant)'
+    )
+    parser.add_argument(
+        '--config-dir', type=str, help='Configuration directory path (default: project root)'
+    )
+    parser.add_argument(
+        '--verbose', '-v', action='store_true', help='Enable verbose output'
+    )
+    return parser
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Apply contest restrictions to a user (Squid proxy mode)")
-    parser.add_argument('user', help='Username to restrict')
-    parser.add_argument('--config-dir', type=str, help='Configuration directory path (default: config/)')
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
+    parser = create_parser()
     args = parser.parse_args()
+    check_root()
 
-    username = args.user
-    config_dir = args.config_dir if args.config_dir else str(Path(__file__).parent.parent.parent / "config")
+    print("\n🧹 STEP 1: Remove Previous Restrictions\n" + ("="*40))
+    remove_old_restrictions(args.user, verbose=args.verbose)
+    print("✅ Previous restrictions removed.\n")
 
-    print("\n🧹 Step 1: Clearing previous restrictions...")
-    print("   This may take a few moments if previous restrictions are being removed...")
-    remove_all_restrictions(username)
-    print("   ✅ Previous restrictions cleared.")
+    print("\n🌐 STEP 2: Restrict Internet Access\n" + ("="*40))
+    restrict_internet(args.user, BLACKLIST_TXT, verbose=args.verbose)
+    print("✅ Internet access restricted.\n")
 
-    print("\n🌐 Step 2: Enabling internet restrictions...")
-    blacklist_file = Path(config_dir) / "blacklist.txt"
-    if not generate_squid_acl(blacklist_file):
-        print("❌ Failed to generate Squid blacklist ACL. Aborting.")
-        sys.exit(1)
-    write_squid_conf()
-    try:
-        reload_squid()
-    except Exception:
-        print("❌ Squid service failed to start due to configuration or system error. Restriction not applied.")
-        sys.exit(1)
-    setup_iptables_redirect()
+    print("\n🔌 STEP 3: Block USB Storage Devices\n" + ("="*40))
+    restrict_usb_storage(args.user, verbose=args.verbose)
+    print("✅ USB storage devices blocked.\n")
 
-    print("\n🔒 Step 3: Blocking USB storage devices...")
-    apply_usb_restrictions(username)
+    print("\n🔒 STEP 4: Make Restrictions Persistent\n" + ("="*40))
+    persist_restrictions(args.user, verbose=args.verbose)
+    print("✅ Restrictions persistence setup.\n")
 
-    print("\n💾 Step 4: Enabling persistent restrictions (systemd)...")
-    write_systemd_service(username, config_dir)
+    print("\n⏰ STEP 5: Schedule IP Block Updates\n" + ("="*40))
+    schedule_ip_update(args.user, BLACKLIST_TXT, verbose=args.verbose)
+    print("✅ IP block update scheduled.\n")
 
-    print("\n🎉 All contest restrictions are now ACTIVE and will persist automatically!\n✅ Systemd service and timer set up. Restrictions will persist and update every 30 minutes.\n")
+    print("\n🎉✅ Restrictions applied successfully!")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()

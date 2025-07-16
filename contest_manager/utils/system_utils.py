@@ -209,3 +209,47 @@ def fix_codeblocks_permissions(user):
     run_command(f"find {cb_bin} -type f -exec chmod +x {{}} \\;", shell=True, check=False)
     
     print("✅ CodeBlocks permissions fixed.")
+
+
+def rule_exists(chain, table, match_args):
+    import subprocess
+    try:
+        result = subprocess.run(["iptables", "-t", table, "-S", chain], capture_output=True, text=True)
+        return any(all(arg in line for arg in match_args) for line in result.stdout.splitlines())
+    except Exception:
+        return False
+
+def remove_old_restrictions(user, verbose=False):
+    """Remove previous internet and USB restrictions for the specified user only."""
+    import subprocess
+    import pwd
+    try:
+        uid = pwd.getpwnam(user).pw_uid
+    except Exception:
+        print(f"❌ User {user} not found.")
+        return
+    if verbose:
+        print(f"[remove_old_restrictions] Flushing iptables/ip6tables rules for user {user} (uid={uid})")
+    # Remove user-specific iptables/ip6tables rules if they exist
+    match_args = ["-m owner", f"--uid-owner {uid}", "-j DROP"]
+    if rule_exists("OUTPUT", "filter", match_args):
+        subprocess.run(["iptables", "-D", "OUTPUT", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=False)
+    if rule_exists("OUTPUT", "filter", match_args):
+        subprocess.run(["ip6tables", "-D", "OUTPUT", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=False)
+    print(f"Old restrictions removed for user: {user}")
+
+
+def persist_restrictions(user, verbose=False):
+    """Make restrictions persistent after reboot (systemd service stub)."""
+    if verbose:
+        print(f"[persist_restrictions] Setting up persistence for {user}")
+    # Stub: create a systemd service to reapply restrictions
+    print("Persistence setup (systemd service stub).")
+
+
+def schedule_ip_update(user, blacklist_path, verbose=False):
+    """Schedule periodic IP block updates (cron/systemd timer stub)."""
+    if verbose:
+        print(f"[schedule_ip_update] Scheduling IP block updates for {user}")
+    # Stub: create a cron job or systemd timer
+    print("IP block update scheduled (stub).")
