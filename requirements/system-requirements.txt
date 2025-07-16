@@ -1,0 +1,2 @@
+# System requirements for Contest Environment Manager
+squid

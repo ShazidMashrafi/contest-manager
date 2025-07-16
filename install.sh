@@ -1,4 +1,3 @@
-
 #!/bin/bash
 # 🚀 Contest Environment Manager Installer
 set -e
@@ -16,6 +15,14 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# --- Install System Requirements---
+if [ -f requirements/system-requirements.txt ]; then
+  echo "🔧 Installing system requirements..."
+  grep -v '^#' requirements/system-requirements.txt | xargs -r apt-get install -y
+else
+  echo "⚠️  requirements/system-requirements.txt not found. Skipping system requirements install."
+fi
+
 # --- Uninstall Previous Package ---
 echo "🔄 [1/2] Uninstalling previous $PKG_NAME package (if any)..."
 if pip3 show $PKG_NAME > /dev/null 2>&1; then
@@ -27,7 +34,7 @@ fi
 
 # --- Install Dependencies & Package ---
 echo "📦 [2/2] Installing $PKG_NAME dependencies..."
-pip3 install --break-system-packages -r requirements.txt
+pip3 install --break-system-packages -r requirements/requirements.txt
 echo "🛠️  Installing $PKG_NAME in editable mode..."
 pip3 install --break-system-packages -e .
 

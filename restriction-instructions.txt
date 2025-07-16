@@ -1,0 +1,11 @@
+The restrict command should
+1. Remove any previous restrictions
+2. Block the sites in config/blacklist.
+    i. The sites may have dynamic ip, ipv6. Block all of those
+    ii. The sites may have subdomains, country domains and others. block those
+3. Restrict usb storage devices.
+4. The restrictions should persists after reboots and others.
+5. The ip system block should be updated every once in a while cause ip of blocked sites may change.
+6. The unrestrict command should properly remove the restrictions
+
+the restrict command should be modular. It should use the contest-manager/cli/restrict.py for the system. The restrict.py will handle the system. It will call for utility functions in utils folder. Create new ones or use existing ones. Make the system modular.
