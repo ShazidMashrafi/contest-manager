@@ -21,8 +21,6 @@ def install_apt_packages(apt_file, verbose=False):
                 pkgs.append(pkg)
             else:
                 pkgs.append(line)
-    # Add PPAs (handled in setup.py now)
-    # Install packages
     installed = []
     failed = []
     for pkg in pkgs:
