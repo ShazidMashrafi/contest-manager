@@ -24,8 +24,17 @@ def generate_squid_acl(blacklist_file):
             expanded.add('.' + domain)
         if not domain.startswith('www.'):
             expanded.add('www.' + domain)
+    # Remove overlapping subdomains: if .google.com is present, remove .drive.google.com, etc.
+    def is_subdomain(sub, dom):
+        return sub != dom and sub.endswith(dom)
+    filtered = set(expanded)
+    for d1 in expanded:
+        for d2 in expanded:
+            if is_subdomain(d1, d2):
+                if d2 in filtered:
+                    filtered.discard(d1)
     with open(SQUID_BLACKLIST_PATH, 'w') as f:
-        for d in sorted(expanded):
+        for d in sorted(filtered):
             f.write(d + '\n')
     print_status(f"Squid blacklist ACL generated at {SQUID_BLACKLIST_PATH}")
     return True
@@ -33,22 +42,81 @@ def generate_squid_acl(blacklist_file):
 # Helper: Write main squid.conf with blacklist ACL
 def write_squid_conf():
     conf = f"""
+http_port 3128
 http_port 3128 transparent
 acl blocked dstdomain "/etc/squid/blacklist.acl"
 http_access deny blocked
 http_access allow all
+
+# Required minimum config
+cache_dir ufs /var/spool/squid 100 16 256
+cache deny all
+access_log /var/log/squid/access.log
+cache_log /var/log/squid/cache.log
+pid_filename /var/run/squid/squid.pid
+coredump_dir /var/spool/squid
+visible_hostname contest-squid
 """
+    # Ensure log and coredump directories exist and correct permissions
+    import os
+    import pwd
+    os.makedirs('/var/log/squid', exist_ok=True)
+    os.makedirs('/var/spool/squid', exist_ok=True)
+    os.makedirs('/var/run/squid', exist_ok=True)
+    # Set permissions for squid user if exists, recursively for /var/spool/squid and /var/run/squid
+    try:
+        import shutil
+        squid_uid = pwd.getpwnam('proxy').pw_uid
+        squid_gid = pwd.getpwnam('proxy').pw_gid
+        os.chown('/var/log/squid', squid_uid, squid_gid)
+        os.chown('/var/run/squid', squid_uid, squid_gid)
+        for root, dirs, files in os.walk('/var/spool/squid'):
+            os.chown(root, squid_uid, squid_gid)
+            for d in dirs:
+                os.chown(os.path.join(root, d), squid_uid, squid_gid)
+            for f in files:
+                os.chown(os.path.join(root, f), squid_uid, squid_gid)
+    except Exception:
+        pass
     with open(SQUID_CONF_PATH, 'w') as f:
         f.write(conf)
     print_status(f"Squid config written to {SQUID_CONF_PATH}")
 
-# Helper: Reload Squid
+# Helper: Reload Squid and check for errors, raise if fails
 def reload_squid():
     try:
-        subprocess.run(["systemctl", "restart", "squid"], check=True)
-        print_status("Squid service restarted.")
+        import os
+        import pwd
+        squid_uid = pwd.getpwnam('proxy').pw_uid
+        squid_gid = pwd.getpwnam('proxy').pw_gid
+        # Always initialize cache as proxy user
+        subprocess.run(["sudo", "-u", "proxy", "squid", "-z"], check=True)
+        # Always ensure permissions are correct before parse/restart
+        for root, dirs, files in os.walk('/var/spool/squid'):
+            os.chown(root, squid_uid, squid_gid)
+            for d in dirs:
+                os.chown(os.path.join(root, d), squid_uid, squid_gid)
+            for f in files:
+                os.chown(os.path.join(root, f), squid_uid, squid_gid)
+        result = subprocess.run(["squid", "-k", "parse", "-f", SQUID_CONF_PATH], capture_output=True, text=True)
+        if result.returncode != 0:
+            print_error(f"❌ Squid config error: {result.stderr.strip()}")
+            raise RuntimeError("Squid config parse failed")
+        restart_result = subprocess.run(["systemctl", "restart", "squid"], capture_output=True, text=True)
+        if restart_result.returncode != 0:
+            print_error(f"❌ Squid service failed to start: {restart_result.stderr.strip()}")
+            # Only print systemctl status and journalctl logs if user is running with --verbose
+            import sys
+            if '--verbose' in sys.argv:
+                status = subprocess.run(["systemctl", "status", "squid.service"], capture_output=True, text=True)
+                print_error(f"systemctl status squid.service:\n{status.stdout}\n{status.stderr}")
+                journal = subprocess.run(["journalctl", "-xeu", "squid.service", "--no-pager", "-n", "50"], capture_output=True, text=True)
+                print_error(f"journalctl -xeu squid.service:\n{journal.stdout}\n{journal.stderr}")
+            raise RuntimeError("Squid service failed to start. See above for details.")
+        print_status("✅ Squid service restarted.")
     except Exception as e:
-        print_error(f"Failed to restart squid: {e}")
+        print_error(f"❌ Failed to restart squid: {e}")
+        raise
 
 # Helper: Set up iptables redirect for transparent proxy
 def setup_iptables_redirect():
@@ -69,6 +137,7 @@ def setup_iptables_redirect():
         print_warning(f"Failed to block HTTPS: {e}")
 
 def remove_iptables_redirect():
+    print_status("Removing iptables redirects for Squid...")
     # Remove all PREROUTING rules for port 3128
     try:
         while True:
@@ -101,8 +170,10 @@ def remove_iptables_redirect():
                 break
     except Exception:
         pass
+    print_status("iptables redirects removed.")
 
 def remove_squid_restrictions():
+    print_status("🧹 Removing all Squid network restrictions...")
     remove_iptables_redirect()
     try:
         subprocess.run(["systemctl", "stop", "squid"], check=False)
@@ -114,4 +185,4 @@ def remove_squid_restrictions():
             Path(f).unlink()
         except Exception:
             pass
-    print_status("Squid restrictions removed.")
+    print_status("✅ Squid restrictions removed.")

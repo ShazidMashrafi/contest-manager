@@ -54,28 +54,22 @@ def main():
         action='store_true',
         help='Enable verbose output'
     )
-    parser.add_argument(
-        '--remove-systemd',
-        action='store_true',
-        help='Remove systemd service/timer for persistent restrictions'
-    )
     args = parser.parse_args()
     check_root()
     try:
-        print("\n🔓 STEP 1: Removing Squid Proxy and Network Restrictions\n" + ("="*40))
+        print("\n🧹 Step 1: Removing Squid Proxy and Network Restrictions...")
         remove_squid_restrictions()
-        print(f"✅ Network (proxy) restrictions removed.")
+        print(f"   ✅ Network (proxy) restrictions removed.")
 
-        print("\n🔓 STEP 2: Removing USB Storage Restrictions\n" + ("="*40))
+        print("\n🧹 Step 2: Removing USB Storage Restrictions...")
         remove_usb_restrictions(args.user)
-        print(f"✅ USB storage restrictions removed for user '{args.user}'.")
+        print(f"   ✅ USB storage restrictions removed for user '{args.user}'.")
 
-        if args.remove_systemd:
-            print("\n🔓 STEP 3: Removing systemd service/timer for persistent restrictions\n" + ("="*40))
-            remove_systemd_service()
-            print("✅ Systemd service and timer removed.")
+        print("\n🧹 Step 3: Removing persistent systemd service/timer...")
+        remove_systemd_service()
+        print("   ✅ Systemd service and timer removed.")
 
-        print(f"\n🎉✅ All restrictions removed for user '{args.user}'.")
+        print(f"\n🎉 All contest restrictions have been REMOVED for user '{args.user}'.\n")
         sys.exit(0)
     except KeyboardInterrupt:
         print("\nUnrestriction cancelled by user")

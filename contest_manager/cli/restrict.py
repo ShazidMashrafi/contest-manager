@@ -41,31 +41,36 @@ def main():
     parser.add_argument('user', help='Username to restrict')
     parser.add_argument('--config-dir', type=str, help='Configuration directory path (default: config/)')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
-    parser.add_argument('--setup-systemd', action='store_true', help='Set up systemd service/timer for persistence')
     args = parser.parse_args()
 
     username = args.user
     config_dir = args.config_dir if args.config_dir else str(Path(__file__).parent.parent.parent / "config")
 
-    # 1. Remove previous restrictions
+    print("\n🧹 Step 1: Clearing previous restrictions...")
+    print("   This may take a few moments if previous restrictions are being removed...")
     remove_all_restrictions(username)
-    # 2. Generate Squid ACL from blacklist
+    print("   ✅ Previous restrictions cleared.")
+
+    print("\n🌐 Step 2: Enabling internet restrictions...")
     blacklist_file = Path(config_dir) / "blacklist.txt"
     if not generate_squid_acl(blacklist_file):
+        print("❌ Failed to generate Squid blacklist ACL. Aborting.")
         sys.exit(1)
-    # 3. Write Squid config
     write_squid_conf()
-    # 4. Reload Squid
-    reload_squid()
-    # 5. Set up iptables redirect
+    try:
+        reload_squid()
+    except Exception:
+        print("❌ Squid service failed to start due to configuration or system error. Restriction not applied.")
+        sys.exit(1)
     setup_iptables_redirect()
-    # 6. Restrict USB
+
+    print("\n🔒 Step 3: Blocking USB storage devices...")
     apply_usb_restrictions(username)
 
-    if args.setup_systemd:
-        print("Setting up systemd service and timer for persistent restrictions...")
-        write_systemd_service(username, config_dir)
-        print("✅ Systemd service and timer set up. Restrictions will persist and update every 30 minutes.")
+    print("\n💾 Step 4: Enabling persistent restrictions (systemd)...")
+    write_systemd_service(username, config_dir)
+
+    print("\n🎉 All contest restrictions are now ACTIVE and will persist automatically!\n✅ Systemd service and timer set up. Restrictions will persist and update every 30 minutes.\n")
 
 if __name__ == "__main__":
     main()
