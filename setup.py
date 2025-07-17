@@ -18,7 +18,7 @@ def get_long_description():
         return f.read()
 
 def get_requirements():
-    req_path = os.path.join(os.path.dirname(__file__), 'requirements', 'requirements.txt')
+    req_path = os.path.join(os.path.dirname(__file__), 'requirements.txt')
     with open(req_path, 'r') as f:
         return [line.strip() for line in f if line.strip() and not line.startswith('#')]
 

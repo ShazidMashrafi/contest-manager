@@ -15,13 +15,16 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# --- Install System Requirements---
-if [ -f requirements/system-requirements.txt ]; then
-  echo "🔧 Installing system requirements..."
-  grep -v '^#' requirements/system-requirements.txt | xargs -r apt-get install -y
+
+# --- Install Python Requirements ---
+REQ_FILE="requirements.txt"
+if [ -f "$REQ_FILE" ]; then
+  echo "� Installing Python requirements..."
+  pip3 install --break-system-packages -r "$REQ_FILE"
 else
-  echo "⚠️  requirements/system-requirements.txt not found. Skipping system requirements install."
+  echo "⚠️  $REQ_FILE not found. Skipping Python requirements install."
 fi
+
 
 # --- Uninstall Previous Package ---
 echo "🔄 [1/2] Uninstalling previous $PKG_NAME package (if any)..."
@@ -32,9 +35,7 @@ else
   echo "✅ No previous installation of $PKG_NAME found."
 fi
 
-# --- Install Dependencies & Package ---
-echo "📦 [2/2] Installing $PKG_NAME dependencies..."
-pip3 install --break-system-packages -r requirements/requirements.txt
+# --- Install Package ---
 echo "🛠️  Installing $PKG_NAME in editable mode..."
 pip3 install --break-system-packages -e .
 
