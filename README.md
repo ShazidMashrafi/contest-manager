@@ -1,4 +1,3 @@
-
 # Contest Environment Manager
 
 A robust, modular system for setting up a PC for onsite competitive programming contests, with intuitive configuration via editable files in the `config/` folder.

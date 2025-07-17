@@ -1,0 +1,9 @@
+# Format: username password
+# Only username will create user with no password. Example:
+# contestant 123
+# participant
+
+# Lines starting with '#' are comments and ignored.
+
+
+participant

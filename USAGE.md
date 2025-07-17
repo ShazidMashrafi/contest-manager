@@ -4,117 +4,178 @@ This guide explains how to use the Contest Environment Manager CLI to set up, re
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Setup](#setup)
+- [Install](#install)
+- [Setup Environment](#setup)
 - [Restrict](#restrict)
 - [Unrestrict](#unrestrict)
 - [Reset](#reset)
 - [Status](#status)
-- [Config File Management](#config-file-management)
 
 ---
 
-## Overview
+## Install
 
-All commands default to the user `participant` if no username is provided.  
+To install the Contest Environment Manager CLI, run:
 
-By default, the CLI command is `contest-manager`. You can customize the base command by running:
+```bash
+sudo bash install.sh
+```
+
+You can also specify a custom base command:
 
 ```bash
 sudo bash install.sh mdpc
 ```
 
-This will use `mdpc` as the base command for all CLI operations. If no argument is given, it defaults to `contest-manager`.
+If no argument is given, it defaults to `contest-manager`.
 
-Run `$BASE_CMD --help` for a full list of commands and options (replace `$BASE_CMD` with your chosen command).
 
----
+## Setup environment
 
-## Setup
-
-Set up a contest user and environment:
+To set up the contest environment, run:
 
 ```bash
-sudo contest-manager setup [username]
+sudo contest-manager setup
+```
 
-# Example:
-sudo contest-manager setup           # sets up 'participant'
-sudo contest-manager setup contestant     # sets up 'contestant'
+This command will:
+- Create all users listed in `config/users.txt`
+- Install packages from `config/apt.txt`, `config/snap.txt`, and `config/flatpak.txt`
+- Install VS Code extensions from `config/vscode-extensions.txt`
+- Apply system settings for the contest
 
-```bash
-# Default:
+### How to use the config files
 
-# Custom:
-Apply contest restrictions (network and USB) to a user:
+**config/users.txt**
+  - Format: `username password` (password optional)
+  - Example:
+    ```
+    contestant 123
+    participant
+    ```
+  - Lines starting with `#` are comments and ignored.
 
-# Example:
+**config/apt.txt**
+  - List of apt packages to install, one per line.
+  - You can add PPAs using lines like: `package(ppa:ppa-link)`
+  - Example:
+    ```
+    build-essential
+    gcc
+    firefox
+    grub-customizer(ppa:danielrichter2007/grub-customizer)
+    ```
+
+**config/snap.txt**
+  - List of snap packages to install, one per line, as you would use with `snap install`.
+  - Example:
+    ```
+    code --classic
+    sublime-text --classic
+    ```
+
+**config/flatpak.txt**
+  - List of flatpak packages to install, one per line, as you would use with `flatpak install -y`.
+  - Example:
+    ```
+    flathub org.vscode.Code
+    ```
+
+**config/vscode-extensions.txt**
+  - List of VS Code extensions to install, one per line.
+  - Example:
+    ```
+    ms-vscode.cpptools
+    ms-python.python
+    redhat.java
+    ```
+
+Edit these files as needed before running the setup command. All configuration is file-driven; no arguments are required.
+
+## Restrict
+
+To restrict a contest user's environment (block internet and USB storage):
 
 ```bash
 sudo contest-manager restrict [username]
 ```
 
-# Example:
-sudo contest-manager restrict        # restricts 'participant'
-sudo contest-manager restrict contestant  # restricts 'contestant'
+- If no username is given, it defaults to `participant`.
+- Restrictions are applied using the blacklist in `config/blacklist.txt`.
+- USB storage devices are blocked for the user.
+- Restrictions are persisted until manually removed by unrestrict command.
 
+**Example:**
 ```bash
-# Default:
+sudo contest-manager restrict
+sudo contest-manager restrict contestant
+```
 
-# Custom:
-Remove all contest restrictions from a user:
+## Unrestrict
 
-# Example:
+To remove all contest restrictions (restore internet and USB access) for a user:
 
 ```bash
 sudo contest-manager unrestrict [username]
 ```
 
-# Example:
-sudo contest-manager unrestrict      # removes from 'participant'
+- If no username is given, it defaults to `participant`.
+- Removes internet restrictions using `config/blacklist.txt`.
+- Restores USB storage device access for the user.
+
+**Example:**
+```bash
+sudo contest-manager unrestrict
 sudo contest-manager unrestrict contestant
+```
+## Status
+
+To check the current restriction status for a user:
 
 ```bash
-# Default:
+sudo contest-manager status [username]
+```
 
-# Custom:
-Reset a user's environment to a clean state:
+- If no username is given, it defaults to `participant`.
+- Shows whether internet and USB restrictions are active for the user.
 
-# Example:
+**Example:**
+```bash
+sudo contest-manager status
+sudo contest-manager status contestant
+```
+
+## Reset
+
+To reset a contest user's environment to a clean state (restore home from backup):
 
 ```bash
 sudo contest-manager reset [username]
 ```
 
-# Example:
-sudo contest-manager reset           # resets 'participant'
+- If no username is given, it defaults to `participant`.
+- Restores the user's home directory from backup.
+- Removes any changes made during the contest session.
+
+**Example:**
+```bash
+sudo contest-manager reset
 sudo contest-manager reset contestant
-
-```bash
-# Default:
-
-# Custom:
-```bash
-
-# Example:
-contest-manager status [username]
-
-# Example:
 ```
-contest-manager status               # checks 'participant'
-contest-manager status contestant
-
-```bash
-# Default:
-
-# Custom:
-- `config/blacklist.txt`: List of domains to block for contest users.
-
-# Example:
-- `config/apt.txt`: List of apt packages to install.
-- `config/snap.txt`: List of snap packages to install.
-- `config/flatpak.txt`: List of flatpak packages to install.
-```
-
-Edit these files as needed for your contest environment. No domains or packages are hardcoded; all are file-driven.
 
 ---
+
+# Need Help?
+
+For troubleshooting, advanced configuration, or more details, see the project README or run:
+
+```bash
+$BASE_CMD --help
+```
+
+For bug reports or feature requests, please contact the maintainer or open an issue on GitHub.
+
+---
+
+Thank you for using the Contest Environment Manager!
+
