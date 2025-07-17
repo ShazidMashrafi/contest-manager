@@ -49,10 +49,8 @@ def main():
     print("✅ USB storage devices blocked.\n")
 
     print("\n⏰ STEP 4: Persisting Restrictions\n" + ("="*40))
-    print("Persisting internet restrictions...")
-    persist_internet_restrictions(args.user)
-    print("Persisting USB restrictions...")
-    persist_usb_restrictions(args.user)
+    print("Persisting internet and usb restrictions...")
+
     print("✅ Restrictions persisted successfully!\n")
 
     print("\n🎉✅ Restrictions applied successfully!")

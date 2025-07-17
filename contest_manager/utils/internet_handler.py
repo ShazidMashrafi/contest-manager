@@ -1,10 +1,10 @@
 """
 Internet restriction utilities for contest-manager
 """
-import subprocess
-from pathlib import Path
-import dns.resolver
 import pwd
+import subprocess
+import dns.resolver
+from pathlib import Path
 
 def get_subdomains(domain):
     """Generate common subdomain names for a domain."""
@@ -117,12 +117,15 @@ def unrestrict_internet(user, blacklist_path, verbose=False):
                 if f"-m owner --uid-owner {uid}" in rule and "-j DROP" in rule:
                     # Convert rule to delete command
                     delete_cmd = [table, "-D", "OUTPUT"] + rule.replace(f"-A OUTPUT ", "").split()
-                    try:
-                        subprocess.run(delete_cmd, check=False)
-                        if verbose:
-                            print(f"Removed rule: {table} {' '.join(delete_cmd)}")
-                    except Exception:
-                        pass
+                    # Check if rule exists before attempting to delete
+                    check_result = subprocess.run([table, "-C", "OUTPUT"] + rule.replace(f"-A OUTPUT ", "").split(), capture_output=True)
+                    if check_result.returncode == 0:
+                        try:
+                            subprocess.run(delete_cmd, check=False)
+                            if verbose:
+                                print(f"Removed rule: {table} {' '.join(delete_cmd)}")
+                        except Exception:
+                            pass
         except Exception:
             pass
     print("✅ All internet restrictions removed for user.")
@@ -148,56 +151,3 @@ def internet_restriction_check(user):
         except Exception:
             pass
     return False
-
-def persist_internet_restrictions(user):
-    """
-    Persist internet restrictions for the user using systemd service and timer.
-    """
-    import sys
-    import subprocess
-    from pathlib import Path
-    service_name = f"contest-inet-restrict-{user}.service"
-    timer_name = f"contest-inet-restrict-{user}.timer"
-    script_path = Path(__file__).parent.parent / "cli" / "restrict.py"
-    service_path = f"/etc/systemd/system/{service_name}"
-    timer_path = f"/etc/systemd/system/{timer_name}"
-
-    service_content = f"""
-[Unit]
-Description=Persist internet restrictions for user {user}
-After=network.target
-
-[Service]
-Type=oneshot
-ExecStart={sys.executable} {script_path} {user}
-User=root
-
-[Install]
-WantedBy=multi-user.target
-"""
-
-    timer_content = f"""
-[Unit]
-Description=Run internet restriction for user {user} every 30 minutes
-
-[Timer]
-OnBootSec=1min
-OnUnitActiveSec=30min
-Unit={service_name}
-
-[Install]
-WantedBy=timers.target
-"""
-
-    try:
-        with open(service_path, "w") as f:
-            f.write(service_content)
-        with open(timer_path, "w") as f:
-            f.write(timer_content)
-        subprocess.run(["systemctl", "daemon-reload"], check=True)
-        subprocess.run(["systemctl", "enable", "--now", timer_name], check=True)
-        print(f"Systemd internet restriction service and timer created for user {user}.")
-        return True
-    except Exception as e:
-        print(f"Failed to set up internet restriction persistence: {e}")
-        return False
