@@ -11,10 +11,10 @@ def install_vscode_extensions(ext_file, user=None, verbose=False):
     installed = []
     failed = []
     for ext in extensions:
-        if is_extension_installed(ext, user):
+        if is_extension_installed(ext):
             print(f"[vscode] ⏩ Already installed: {ext}")
             continue
-        if install_extension(ext, user):
+        if install_extension(ext):
             installed.append(ext)
         else:
             failed.append(ext)

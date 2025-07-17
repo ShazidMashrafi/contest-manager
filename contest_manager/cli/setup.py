@@ -46,8 +46,9 @@ def main():
     cleanup_system()
 
     print("\n🗄️  STEP 7: Backing up home\n" + ("="*40))
-    for user in users:
-        create_user_backup(user)
+    user_pairs = extract_user_password_pairs(USERS_TXT)
+    for username, _ in user_pairs:
+        create_user_backup(username)
 
     print("\n🎉✅ Setup complete!")
     sys.exit(0)
