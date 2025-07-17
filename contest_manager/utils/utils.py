@@ -1,13 +1,7 @@
 import os
-import shutil
-import subprocess
-from pathlib import Path
-import subprocess
 import sys
 import shutil
-import pwd
-import os
-from pathlib import Path
+import subprocess
 
 def run_command(cmd, shell=False, check=True, capture_output=False):
     """Run a command and handle errors."""
@@ -25,15 +19,6 @@ def run_command(cmd, shell=False, check=True, capture_output=False):
         if check:
             sys.exit(1)
         return e
-
-def print_status(text):
-    print(f"✅ {text}")
-
-def print_error(text):
-    print(f"❌ {text}")
-
-def print_warning(text):
-    print(f"⚠️  {text}")
 
 def check_root():
     if os.geteuid() != 0:
@@ -53,12 +38,6 @@ def cleanup_system():
     run_command("apt autoremove -y", shell=True)
     run_command("apt autoclean", shell=True)
     print("✅ System cleanup completed.")
-    
-    
-def create_home_backup(user, verbose=False):
-    backup_path = f"/home/{user}_backup_$(date +%Y%m%d%H%M%S).tar.gz"
-    subprocess.run(["tar", "-czf", backup_path, f"/home/{user}"], check=False)
-    print(f"Backup created at {backup_path}")
     
 
 def fix_vscode_keyring(user):

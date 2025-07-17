@@ -5,8 +5,8 @@ Contest Environment Status CLI
 import sys
 import argparse
 from ..utils.common import get_project_root
-from ..utils.usb_restrictor import is_usb_restricted
-from ..utils.blacklist_restrictor import is_network_restricted
+from ..utils.usb_handler import is_usb_restricted
+from ..utils.internet_handler import is_network_restricted
 
 def create_parser():
     parser = argparse.ArgumentParser(
