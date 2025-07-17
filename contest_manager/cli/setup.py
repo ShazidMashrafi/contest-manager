@@ -6,18 +6,18 @@ import sys
 import argparse
 from pathlib import Path
 from ..utils.utils import *
-from ..utils.user_manager import create_contest_user
-from ..utils.package_manager_setup import setup_package_sources
+from ..utils.user_manager import *
+from ..utils.package_manager_setup import *
 from ..utils.package_installer import *
 from ..utils.vscode_extensions_handler import *
 
 
-# Use config directory for user-editable lists
 CONFIG_DIR = Path(__file__).parent.parent.parent / 'config'
 APT_TXT = CONFIG_DIR / 'apt.txt'
 SNAP_TXT = CONFIG_DIR / 'snap.txt'
 FLATPAK_TXT = CONFIG_DIR / 'flatpak.txt'
 VSCODE_EXTENSIONS = CONFIG_DIR / 'vscode-extensions.txt'
+
 
 def create_parser():
     """Create the setup argument parser."""
@@ -62,7 +62,7 @@ def main():
     cleanup_system()
 
     print("\n🗄️  STEP 7: Backing up home\n" + ("="*40))
-    create_home_backup(args.user, verbose=args.verbose)
+    create_user_backup(args.user, verbose=args.verbose)
 
     print("\n🎉✅ Setup complete!")
     sys.exit(0)

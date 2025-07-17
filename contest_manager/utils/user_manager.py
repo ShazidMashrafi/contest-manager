@@ -4,41 +4,52 @@ User management utilities for contest environment.
 """
 
 import os
-from .common import *
+import subprocess
+from .utils import *
+
+def set_user_permissions(user):
+    """Set ownership, permissions, and umask for user home."""
+    user_home = f"/home/{user}"
+    if not os.path.exists(user_home):
+        print(f"❌ Home directory does not exist for user: {user}")
+        return
+    subprocess.run(f"chown -R {user}:{user} {user_home}", shell=True)
+    subprocess.run(f"chmod -R u+rwX,go-w {user_home}", shell=True)
+    # Set umask for future files
+    umask_line = "umask 022"
+    for file_path in [f"{user_home}/.bashrc", f"{user_home}/.profile"]:
+        try:
+            with open(file_path, 'r') as f:
+                content = f.read()
+            if umask_line not in content:
+                with open(file_path, 'a') as f:
+                    f.write(f"\n{umask_line}\n")
+        except FileNotFoundError:
+            with open(file_path, 'w') as f:
+                f.write(f"{umask_line}\n")
+    print(f"✅ Permissions and umask set for {user}")
 
 
 def create_contest_user(user):
     """Create a contest user with minimal privileges."""
     try:
         print(f"→ Setting up user account '{user}'")
-        
         # Delete user if exists
-        if user_exists(user):
+        try:
+            import pwd
+            pwd.getpwnam(user)
             print(f"→ User '{user}' exists. Deleting...")
-            run_command(f"deluser {user} --remove-home", shell=True, check=False)
+            subprocess.run(f"deluser {user} --remove-home", shell=True, check=False)
             print(f"✅ User '{user}' deleted successfully.")
-        
+        except KeyError:
+            pass
         # Create user with minimal groups
-        print(f"→ Creating user '{user}' with minimal privileges...")
-        run_command(f"useradd -m -s /bin/bash {user} -G audio,video,cdrom,plugdev,users", shell=True)
-        
-        # Set empty password
-        run_command(f"passwd -d {user}", shell=True)
-        
-        # Ensure user is unlocked
-        run_command(f"usermod -U {user}", shell=True)
-        
-        # Configure autologin
+        subprocess.run(f"useradd -m -s /bin/bash {user} -G audio,video,cdrom,plugdev,users", shell=True)
+        subprocess.run(f"passwd -d {user}", shell=True)
+        subprocess.run(f"usermod -U {user}", shell=True)
         configure_autologin(user)
-        
-        # Remove user from privileged groups
         remove_from_privileged_groups(user)
-        
-        # Ensure user can execute programs
-        ensure_user_can_execute(user)
-        
-        fix_user_permissions(user)
-
+        set_user_permissions(user)
         print(f"✅ User '{user}' created successfully with minimal privileges and correct permissions.")
         return True
     except Exception as e:
@@ -158,19 +169,3 @@ def reset_user_account(user):
     except Exception as e:
         print(f"❌ Failed to reset user account: {e}")
         return False
-
-def fix_user_permissions(user: str):
-    print("→ Fixing file permissions...")
-    user_home = f"/home/{user}"
-    try:
-        if not os.path.exists(user_home):
-            print_error(f"Home directory does not exist for user: {user}")
-            return
-        print(f"→ Setting ownership to {user}:{user}...")
-        run_command(f"chown -R {user}:{user} {user_home}", shell=True)
-        print(f"→ Setting proper permissions...")
-        run_command(f"chmod -R u+rwX {user_home}", shell=True)
-        run_command(f"chmod -R go-w {user_home}", shell=True)
-        print("✅ File permissions fixed successfully")
-    except Exception as e:
-        print_error(f"Failed to fix permissions for {user}: {e}")
