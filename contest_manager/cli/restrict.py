@@ -6,7 +6,7 @@ import sys
 import argparse
 from pathlib import Path
 
-from ..utils.common import *
+from ..utils.utils import check_root
 from ..utils.internet_handler import *
 from ..utils.usb_handler import *
 

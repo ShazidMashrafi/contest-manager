@@ -5,8 +5,6 @@ Contest Environment Setup CLI
 import sys
 import argparse
 from pathlib import Path
-from ..utils.common import check_root, get_project_root
-
 from ..utils.utils import *
 from ..utils.user_manager import create_contest_user
 from ..utils.package_manager_setup import setup_package_sources

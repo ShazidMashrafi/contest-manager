@@ -2,7 +2,43 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from .common import run_command, print_status, print_error, print_warning
+import subprocess
+import sys
+import shutil
+import pwd
+import os
+from pathlib import Path
+
+def run_command(cmd, shell=False, check=True, capture_output=False):
+    """Run a command and handle errors."""
+    try:
+        if shell:
+            result = subprocess.run(cmd, shell=True, check=check, 
+                                  capture_output=capture_output, text=True)
+        else:
+            result = subprocess.run(cmd, check=check, capture_output=capture_output, text=True)
+        return result
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Command failed: {e.cmd}")
+        if capture_output:
+            print(f"Error output: {e.stderr}")
+        if check:
+            sys.exit(1)
+        return e
+
+def print_status(text):
+    print(f"✅ {text}")
+
+def print_error(text):
+    print(f"❌ {text}")
+
+def print_warning(text):
+    print(f"⚠️  {text}")
+
+def check_root():
+    if os.geteuid() != 0:
+        print("❌ Error: This command must be run as root")
+        sys.exit(1)
 
 def disable_system_updates():
     print("→ Disabling automatic system updates...")
