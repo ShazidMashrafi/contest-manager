@@ -124,66 +124,61 @@ def setup_users(users_file_path):
         create_user(username, password)
     return True
 
+
+def backup_exists(user):
+    backup_home = f"/opt/{user}_backup/{user}_home"
+    return os.path.exists(backup_home)
+
+def is_user_logged_in(user):
+    try:
+        result = subprocess.run(['pgrep', '-u', user], capture_output=True, text=True)
+        return result.returncode == 0
+    except Exception:
+        return False
+
+def delete_home_contents(user):
+    user_home = f"/home/{user}"
+    print(f"→ Deleting contents of {user_home}...")
+    home_path = Path(user_home)
+    if home_path.exists():
+        for item in home_path.iterdir():
+            if item.is_file() or item.is_symlink():
+                item.unlink()
+            elif item.is_dir():
+                shutil.rmtree(item)
+
+def restore_home_from_backup(user):
+    backup_home = f"/opt/{user}_backup/{user}_home"
+    user_home = f"/home/{user}"
+    print(f"→ Restoring from {backup_home}...")
+    cmd = f"rsync -aAX {backup_home}/ {user_home}/"
+    result = run_command(cmd, shell=True, check=False, capture_output=True)
+    if result.returncode != 0:
+        print(f"❌ Failed to restore backup: {result.stderr}")
+        return False
+    return True
+
 def reset_user_account(user):
     """Reset a user account to clean state by restoring from backup."""
-
     print(f"→ Resetting user account '{user}'")
-    
-    user_home = f"/home/{user}"
-    backup_dir = f"/opt/{user}_backup"
-    backup_home = f"{backup_dir}/{user}_home"
-    
-    try:
-        pwd.getpwnam(user)
-        print(f"→ User '{user}' exists")
-    except KeyError:
+    if not user_exists(user):
         print(f"❌ User '{user}' does not exist")
         return False
-    
-    # Check if backup exists
-    if not os.path.exists(backup_home):
-        print(f"❌ Backup directory {backup_home} does not exist")
+    if not backup_exists(user):
+        print(f"❌ Backup directory /opt/{user}_backup/{user}_home does not exist")
         print("Please run setup first to create a backup")
         return False
-    
-    # Check if user is logged out
+    if is_user_logged_in(user):
+        print(f"❌ User '{user}' is currently logged in")
+        print("Please log them out before resetting")
+        return False
     try:
-        result = subprocess.run(['pgrep', '-u', user], 
-                              capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"❌ User '{user}' is currently logged in")
-            print("Please log them out before resetting")
+        delete_home_contents(user)
+        if not restore_home_from_backup(user):
             return False
-    except:
-        pass  # pgrep not found or other error, continue
-    
-    try:
-        # Delete all contents of home directory
-        print(f"→ Deleting contents of {user_home}...")
-        home_path = Path(user_home)
-        if home_path.exists():
-            for item in home_path.iterdir():
-                if item.is_file() or item.is_symlink():
-                    item.unlink()
-                elif item.is_dir():
-                    shutil.rmtree(item)
-        
-        # Restore from backup using rsync
-        print(f"→ Restoring from {backup_home}...")
-        cmd = f"rsync -aAX {backup_home}/ {user_home}/"
-        result = run_command(cmd, shell=True, check=False, capture_output=True)
-        
-        if result.returncode != 0:
-            print(f"❌ Failed to restore backup: {result.stderr}")
-            return False
-        
-        # Fix ownership and permissions
-        run_command(f"chown -R {user}:{user} {user_home}", shell=True)
-        run_command(f"chmod -R u+rwX,go-w {user_home}", shell=True)
-        
+        set_user_permissions(user)
         print(f"✅ User '{user}' reset successfully")
         return True
-        
     except Exception as e:
         print(f"❌ Failed to reset user account: {e}")
         return False
