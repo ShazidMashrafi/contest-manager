@@ -37,7 +37,9 @@ def create_contest_user(user):
         # Ensure user can execute programs
         ensure_user_can_execute(user)
         
-        print(f"✅ User '{user}' created successfully with minimal privileges.")
+        fix_user_permissions(user)
+
+        print(f"✅ User '{user}' created successfully with minimal privileges and correct permissions.")
         return True
     except Exception as e:
         print(f"❌ Failed to create contest user: {e}")
@@ -156,3 +158,19 @@ def reset_user_account(user):
     except Exception as e:
         print(f"❌ Failed to reset user account: {e}")
         return False
+
+def fix_user_permissions(user: str):
+    print("→ Fixing file permissions...")
+    user_home = f"/home/{user}"
+    try:
+        if not os.path.exists(user_home):
+            print_error(f"Home directory does not exist for user: {user}")
+            return
+        print(f"→ Setting ownership to {user}:{user}...")
+        run_command(f"chown -R {user}:{user} {user_home}", shell=True)
+        print(f"→ Setting proper permissions...")
+        run_command(f"chmod -R u+rwX {user_home}", shell=True)
+        run_command(f"chmod -R go-w {user_home}", shell=True)
+        print("✅ File permissions fixed successfully")
+    except Exception as e:
+        print_error(f"Failed to fix permissions for {user}: {e}")
