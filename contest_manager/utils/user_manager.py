@@ -5,7 +5,28 @@ User management utilities for contest environment.
 
 import os
 import subprocess
+from pathlib import Path
+import pwd
+import shutil
 from .utils import *
+
+def create_user_backup(user):
+    """Create backup of user's home directory."""
+    print(f"→ Creating backup of user '{user}' home directory...")
+    
+    backup_dir = f"/opt/{user}_backup"
+    user_home = f"/home/{user}"
+    backup_home = f"{backup_dir}/{user}_home"
+    
+    # Create backup directory
+    os.makedirs(backup_dir, exist_ok=True)
+    
+    # Create backup if it doesn't exist
+    if not os.path.exists(backup_home):
+        run_command(f"rsync -aAX {user_home}/ {backup_home}/", shell=True)
+        print(f"✅ Backup created at {backup_home}")
+    else:
+        print("✅ Backup already exists. Skipping.")
 
 def set_user_permissions(user):
     """Set ownership, permissions, and umask for user home."""
@@ -28,53 +49,7 @@ def set_user_permissions(user):
             with open(file_path, 'w') as f:
                 f.write(f"{umask_line}\n")
     print(f"✅ Permissions and umask set for {user}")
-
-
-def create_contest_user(user):
-    """Create a contest user with minimal privileges."""
-    try:
-        print(f"→ Setting up user account '{user}'")
-        # Delete user if exists
-        try:
-            import pwd
-            pwd.getpwnam(user)
-            print(f"→ User '{user}' exists. Deleting...")
-            subprocess.run(f"deluser {user} --remove-home", shell=True, check=False)
-            print(f"✅ User '{user}' deleted successfully.")
-        except KeyError:
-            pass
-        # Create user with minimal groups
-        subprocess.run(f"useradd -m -s /bin/bash {user} -G audio,video,cdrom,plugdev,users", shell=True)
-        subprocess.run(f"passwd -d {user}", shell=True)
-        subprocess.run(f"usermod -U {user}", shell=True)
-        configure_autologin(user)
-        remove_from_privileged_groups(user)
-        set_user_permissions(user)
-        print(f"✅ User '{user}' created successfully with minimal privileges and correct permissions.")
-        return True
-    except Exception as e:
-        print(f"❌ Failed to create contest user: {e}")
-        return False
-
-
-def configure_autologin(user):
-    """Configure automatic login for the user."""
-    lightdm_conf = "/etc/lightdm/lightdm.conf"
-    gdm_conf = "/etc/gdm3/custom.conf"
-    
-    if os.path.exists(lightdm_conf):
-        with open(lightdm_conf, 'a') as f:
-            f.write(f"autologin-user={user}\n")
-        print("✅ Autologin configured in LightDM.")
-    elif os.path.exists(gdm_conf):
-        # Configure GDM autologin
-        run_command(f"sed -i 's/^#  AutomaticLoginEnable = false/AutomaticLoginEnable = true/' {gdm_conf}", shell=True)
-        run_command(f"sed -i 's/^#  AutomaticLogin = .*/AutomaticLogin = {user}/' {gdm_conf}", shell=True)
-        print("✅ Autologin configured in GDM3.")
-    else:
-        print("⚠️ Could not detect supported display manager for autologin setup.")
-
-
+        
 def remove_from_privileged_groups(user):
     """Remove user from privileged groups."""
     privileged_groups = ["sudo", "netdev", "adm", "disk"]
@@ -82,39 +57,82 @@ def remove_from_privileged_groups(user):
         run_command(f"gpasswd -d {user} {group}", shell=True, check=False)
 
 
-def create_user_backup(user):
-    """Create backup of user's home directory."""
-    print(f"→ Creating backup of user '{user}' home directory...")
-    
-    backup_dir = f"/opt/{user}_backup"
-    user_home = f"/home/{user}"
-    backup_home = f"{backup_dir}/{user}_home"
-    
-    # Create backup directory
-    os.makedirs(backup_dir, exist_ok=True)
-    
-    # Create backup if it doesn't exist
-    if not os.path.exists(backup_home):
-        run_command(f"rsync -aAX {user_home}/ {backup_home}/", shell=True)
-        print(f"✅ Backup created at {backup_home}")
-    else:
-        print("✅ Backup already exists. Skipping.")
+def user_exists(username):
+    """Check if a user exists."""
+    try:
+        pwd.getpwnam(username)
+        return True
+    except KeyError:
+        return False
 
+def delete_user(username):
+    """Delete a user and their home directory."""
+    print(f"→ User '{username}' exists. Deleting...")
+    subprocess.run(f"deluser {username} --remove-home", shell=True, check=False)
+    print(f"✅ User '{username}' deleted successfully.")
+
+def create_user(username, password):
+    """Create a contest user with minimal privileges and setup."""
+    if user_exists(username):
+        delete_user(username)
+    subprocess.run(f"useradd -m -s /bin/bash {username} -G audio,video,cdrom,plugdev,users", shell=True)
+    if password:
+        subprocess.run(f"echo '{username}:{password}' | chpasswd", shell=True)
+    else:
+        subprocess.run(f"passwd -d {username}", shell=True)
+    subprocess.run(f"usermod -U {username}", shell=True)
+    remove_from_privileged_groups(username)
+    set_user_permissions(username)
+    create_user_backup(username)
+    print(f"✅ User '{username}' created successfully with minimal privileges and correct permissions.")
+
+        
+def extract_user_password_pairs(file_path):
+    """Extract user/password pairs from file."""
+    pairs = []
+    with open(file_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                parts = line.split()
+                username = parts[0]
+                password = parts[1] if len(parts) > 1 else ""
+                pairs.append((username, password))
+    if not pairs:
+        print("❌ No users found in users file")
+    return pairs
+
+def check_file_exists(file_path):
+    """Check if the given file exists."""
+    exists = Path(file_path).exists()
+    if not exists:
+        print(f"❌ File not found: {file_path}")
+    return exists
+    
+def setup_users(users_file_path):
+    """
+    Extracts user/password pairs, and sets up each user.
+    Handles both password and empty password cases.
+    """
+    if not check_file_exists(users_file_path):
+        return False
+    pairs = extract_user_password_pairs(users_file_path)
+    if not pairs:
+        return False
+    for username, password in pairs:
+        print(f"→ Setting up user account '{username}'")
+        create_user(username, password)
+    return True
 
 def reset_user_account(user):
     """Reset a user account to clean state by restoring from backup."""
-    from pathlib import Path
-    import shutil
-    import subprocess
-    import pwd
-    
+
     print(f"→ Resetting user account '{user}'")
     
     user_home = f"/home/{user}"
     backup_dir = f"/opt/{user}_backup"
     backup_home = f"{backup_dir}/{user}_home"
     
-    # Check if user exists
     try:
         pwd.getpwnam(user)
         print(f"→ User '{user}' exists")
