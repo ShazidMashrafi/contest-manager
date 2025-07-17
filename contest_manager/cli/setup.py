@@ -5,11 +5,11 @@ Contest Environment Setup CLI
 
 import sys
 from pathlib import Path
-from ..utils.utils import *
-from ..utils.user_manager import *
-from ..utils.package_manager_setup import *
-from ..utils.package_installer import *
-from ..utils.vscode_extensions_handler import *
+from contest_manager.utils.utils import *
+from contest_manager.utils.user_manager import *
+from contest_manager.utils.package_manager_setup import *
+from contest_manager.utils.package_installer import *
+from contest_manager.utils.vscode_extensions_handler import *
 
 
 

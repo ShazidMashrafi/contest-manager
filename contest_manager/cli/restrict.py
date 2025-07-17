@@ -6,9 +6,9 @@ import sys
 import argparse
 from pathlib import Path
 
-from ..utils.utils import check_root
-from ..utils.internet_handler import *
-from ..utils.usb_handler import *
+from contest_manager.utils.utils import check_root
+from contest_manager.utils.internet_handler import *
+from contest_manager.utils.usb_handler import *
 
 CONFIG_DIR = Path(__file__).parent.parent.parent / 'config'
 BLACKLIST_TXT = CONFIG_DIR / 'blacklist.txt'
@@ -33,7 +33,6 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
     check_root()
-
     print("\n🧹 STEP 1: Remove Previous Restrictions\n" + ("="*40))
     print("Removing internet restriction...")
     unrestrict_internet(args.user, BLACKLIST_TXT, verbose=args.verbose)

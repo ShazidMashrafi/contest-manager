@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 import pwd
 import shutil
-from .utils import *
+from contest_manager.utils.utils import *
 
 def create_user_backup(user):
     """Create backup of user's home directory."""

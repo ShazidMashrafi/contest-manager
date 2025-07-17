@@ -5,8 +5,8 @@ Contest Environment Reset CLI
 
 import sys
 import argparse
-from ..utils.utils import check_root
-from ..utils.user_manager import reset_user_account
+from contest_manager.utils.utils import check_root
+from contest_manager.utils.user_manager import reset_user_account
 
 def main():
     parser = argparse.ArgumentParser(

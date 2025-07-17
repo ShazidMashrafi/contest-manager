@@ -8,8 +8,8 @@ Contest Environment Status CLI
 """
 import sys
 import argparse
-from ..utils.usb_handler import usb_restriction_check
-from ..utils.internet_handler import internet_restriction_check
+from contest_manager.utils.usb_handler import usb_restriction_check
+from contest_manager.utils.internet_handler import internet_restriction_check
 
 def create_parser():
     parser = argparse.ArgumentParser(

@@ -6,12 +6,12 @@ Contest Environment Manager - Main CLI Entry Point
 
 import sys
 import argparse
-from ..utils.utils import check_root
-from ..cli.setup import main as setup_main
-from ..cli.reset import main as reset_main
-from ..cli.restrict import main as restrict_main
-from ..cli.unrestrict import main as unrestrict_main
-from ..cli.status import main as status_main
+from contest_manager.utils.utils import check_root
+from contest_manager.cli.setup import main as setup_main
+from contest_manager.cli.reset import main as reset_main
+from contest_manager.cli.restrict import main as restrict_main
+from contest_manager.cli.unrestrict import main as unrestrict_main
+from contest_manager.cli.status import main as status_main
 
 def main():
     parser = argparse.ArgumentParser(
