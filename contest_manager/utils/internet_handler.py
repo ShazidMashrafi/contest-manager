@@ -29,16 +29,20 @@ def resolve_ips(domain):
         pass
     return ips
 
-def update_ip_cache(user, blacklist_path, cache_path, verbose=False):
+def update_ip_cache(user, blacklist_path, verbose=False):
     """
     Update the stored IP cache for the user by merging new IPs for all domains and subdomains.
     Preserves old entries and adds new ones.
+    Cache file location: /cache/ip_cache_{user}.json
     """
+    cache_dir = Path(__file__).parent.parent.parent / 'cache'
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = cache_dir / f"ip_cache_{user}.json"
     if verbose:
         print(f"[update_ip_cache] Updating IP cache from {blacklist_path} to {cache_path}")
     # Load existing cache if present
     ip_map = {}
-    if Path(cache_path).exists():
+    if cache_path.exists():
         with open(cache_path) as f:
             try:
                 ip_map = json.load(f)
@@ -47,7 +51,7 @@ def update_ip_cache(user, blacklist_path, cache_path, verbose=False):
     # Read domains from blacklist
     if not Path(blacklist_path).exists():
         print(f"❌ Blacklist file {blacklist_path} not found.")
-        return False
+        return False, None
     domains = []
     with open(blacklist_path) as f:
         for line in f:
@@ -56,7 +60,7 @@ def update_ip_cache(user, blacklist_path, cache_path, verbose=False):
                 domains.append(line)
     if not domains:
         print("⚠️  No domains found in blacklist. Skipping IP cache update.")
-        return False
+        return False, None
     allow_patterns = ['static.', 'cdn.', 'fonts.']
     targets = []
     for domain in domains:
