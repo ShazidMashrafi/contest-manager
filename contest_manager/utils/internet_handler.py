@@ -167,32 +167,33 @@ def unrestrict_internet(user, blacklist_path, verbose=False):
     Deletes iptables/ip6tables rules for all domains and subdomains listed in the blacklist.
     """
     print(f"🔓 Unrestricting all internet restrictions for user: {user}")
+    import pwd, subprocess
     try:
         uid = pwd.getpwnam(user).pw_uid
     except Exception:
         print(f"❌ User {user} not found.")
         return
-    # Remove all iptables OUTPUT DROP rules for this UID
     for table in ["iptables", "ip6tables"]:
-        try:
-            # List all rules
-            result = subprocess.run([table, "-S", "OUTPUT"], capture_output=True, text=True)
-            rules = result.stdout.splitlines()
-            for rule in rules:
-                if f"-m owner --uid-owner {uid}" in rule and "-j DROP" in rule:
-                    # Convert rule to delete command
-                    delete_cmd = [table, "-D", "OUTPUT"] + rule.replace(f"-A OUTPUT ", "").split()
-                    # Check if rule exists before attempting to delete
-                    check_result = subprocess.run([table, "-C", "OUTPUT"] + rule.replace(f"-A OUTPUT ", "").split(), capture_output=True)
-                    if check_result.returncode == 0:
+        while True:
+            try:
+                result = subprocess.run([table, "-S", "OUTPUT"], capture_output=True, text=True)
+                rules = result.stdout.splitlines()
+                found = False
+                for rule in rules:
+                    if f"-m owner --uid-owner {uid}" in rule and "-j DROP" in rule:
+                        delete_cmd = [table, "-D", "OUTPUT"] + rule.replace(f"-A OUTPUT ", "").split()
                         try:
                             subprocess.run(delete_cmd, check=False)
                             if verbose:
                                 print(f"Removed rule: {table} {' '.join(delete_cmd)}")
+                            found = True
+                            break  # After deleting, restart loop to avoid shifting
                         except Exception:
                             pass
-        except Exception:
-            pass
+                if not found:
+                    break  # No more rules to delete
+            except Exception:
+                break
     print("✅ All internet restrictions removed for user.")
 
 
