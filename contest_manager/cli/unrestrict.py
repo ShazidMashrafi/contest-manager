@@ -35,14 +35,15 @@ def main():
     args = parser.parse_args()
     check_root()
 
-    print("\n🧹 Unrestricting Contest Environment\n" + ("="*40))
-    print(f"Removing persistence for user: {args.user} ...")
-    remove_persistence(args.user)
-    print(f"Removing internet restriction for user: {args.user} ...")
-    unrestrict_internet(args.user, BLACKLIST_TXT, verbose=args.verbose)
-    print(f"Removing USB restriction for user: {args.user} ...")
+    print("\n🧹 STEP 1: Remove Internet Restriction\n" + ("="*40))
+    unrestrict_dnsmasq_and_firewall(args.user, BLACKLIST_TXT, verbose=args.verbose)
+    print("✅ Internet restriction removed.\n")
+
+    print("\n🧹 STEP 2: Remove USB Restriction\n" + ("="*40))
     unrestrict_usb_storage_device(args.user, verbose=args.verbose)
-    print("✅ All restrictions removed for user: {}\n".format(args.user))
+    print("✅ USB restriction removed.\n")
+
+    print("\n🎉✅ All restrictions removed for user: {}\n".format(args.user))
     sys.exit(0)
 
 if __name__ == "__main__":
