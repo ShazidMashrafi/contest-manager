@@ -9,7 +9,6 @@ from pathlib import Path
 from contest_manager.utils.utils import check_root
 from contest_manager.utils.internet_handler import *
 from contest_manager.utils.usb_handler import *
-from contest_manager.utils.persistence_handler import remove_persistence
 
 CONFIG_DIR = Path(__file__).parent.parent.parent / 'config'
 BLACKLIST_TXT = CONFIG_DIR / 'blacklist.txt'

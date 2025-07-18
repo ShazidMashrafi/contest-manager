@@ -37,6 +37,18 @@ fi
 echo "🛠️  [Step 2/2] Installing $PKG_NAME ..."
 pip3 install --break-system-packages -e .
 
+
+# --- Symlink for Custom Base Command ---
+if [ "$BASE_CMD" != "contest-manager" ]; then
+  BIN_PATH="$(command -v contest-manager)"
+  if [ -n "$BIN_PATH" ]; then
+    ln -sf "$BIN_PATH" "/usr/local/bin/$BASE_CMD"
+    echo "🔗 Symlink created: /usr/local/bin/$BASE_CMD -> $BIN_PATH"
+  else
+    echo "⚠️  contest-manager binary not found. Symlink not created."
+  fi
+fi
+
 # --- Final Instructions ---
 echo "🎉✅ Setup complete! You can now use $BASE_CMD CLI commands."
 echo ""
