@@ -9,6 +9,7 @@ from pathlib import Path
 from contest_manager.utils.utils import check_root
 from contest_manager.utils.internet_handler import *
 from contest_manager.utils.usb_handler import *
+from contest_manager.utils.persistence_handler import start_persistence
 
 CONFIG_DIR = Path(__file__).parent.parent.parent / 'config'
 BLACKLIST_TXT = CONFIG_DIR / 'blacklist.txt'
@@ -49,8 +50,7 @@ def main():
     print("✅ USB storage devices blocked.\n")
 
     print("\n⏰ STEP 4: Persisting Restrictions\n" + ("="*40))
-    print("Persisting internet and usb restrictions...")
-
+    start_persistence(args.user)
     print("✅ Restrictions persisted successfully!\n")
 
     print("\n🎉✅ Restrictions applied successfully!")
