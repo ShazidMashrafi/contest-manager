@@ -3,10 +3,11 @@ Internet restriction utilities for contest-manager
 """
 
 import pwd
+import json
+import shlex
 import subprocess
 import dns.resolver
 from pathlib import Path
-import json
 
 def get_user_cache_path(user):
     """Return the cache path for a user."""
@@ -163,37 +164,36 @@ def restrict_internet(user, blacklist_path, verbose=False):
 
 def unrestrict_internet(user, blacklist_path, verbose=False):
     """
-    Remove internet restrictions for the given user based on blacklist file.
-    Deletes iptables/ip6tables rules for all domains and subdomains listed in the blacklist.
+    Remove all iptables/ip6tables OUTPUT rules for the given user UID.
+    This flushes any network restrictions for the user, regardless of origin or type.
     """
-    print(f"🔓 Unrestricting all internet restrictions for user: {user}")
-    import pwd, subprocess
+    print(f"🔓 Flushing all iptables/ip6tables OUTPUT rules for user: {user}")
     try:
         uid = pwd.getpwnam(user).pw_uid
     except Exception:
         print(f"❌ User {user} not found.")
         return
-    summary = {}
-    for table in ["iptables", "ip6tables"]:
-        removed = 0
-        try:
-            result = subprocess.run([table, "-S", "OUTPUT"], capture_output=True, text=True)
-            rules = result.stdout.splitlines()
-        except Exception:
-            rules = []
-        # Collect all rules for this UID
-        rules_to_delete = [rule for rule in rules if f"-m owner --uid-owner {uid}" in rule]
-        for rule in rules_to_delete:
-            rule_spec = rule.replace(f"-A OUTPUT ", "").split()
-            delete_cmd = [table, "-D", "OUTPUT"] + rule_spec
-            try:
-                proc = subprocess.run(delete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                removed += 1
-            except Exception:
-                continue
-        summary[table] = removed
-    print(f"✅ All internet restrictions removed for user.")
-    print(f"Summary: iptables rules removed: {summary['iptables']}, ip6tables rules removed: {summary['ip6tables']}")
+    tables = ["iptables", "ip6tables"]
+    for table in tables:
+        # List all rules in OUTPUT chain
+        result = subprocess.run([table, "-L", "OUTPUT", "--line-numbers", "-n", "-v"], capture_output=True, text=True)
+        lines = result.stdout.splitlines()
+        # Find line numbers for rules with --uid-owner <uid>
+        rule_lines = []
+        for line in lines:
+            if f"--uid-owner {uid}" in line:
+                parts = line.strip().split()
+                if parts and parts[0].isdigit():
+                    rule_lines.append(int(parts[0]))
+        # Delete rules from bottom to top
+        for line_num in sorted(rule_lines, reverse=True):
+            del_cmd = [table, "-D", "OUTPUT", str(line_num)]
+            del_result = subprocess.run(del_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if del_result.returncode == 0:
+                print(f"[{table}] Deleted OUTPUT rule at line {line_num} for UID {uid}")
+        if not rule_lines:
+            print(f"[{table}] No OUTPUT rules for UID {uid} found.")
+    print(f"✅ All iptables/ip6tables OUTPUT rules for user UID {uid} fully removed.")
 
 
 def internet_restriction_check(user):
