@@ -17,21 +17,13 @@ fi
 
 
 
-
 # --- Step 1: Install System Requirements ---
 echo "\n🧩 STEP 1: Install System Requirements\n========================================"
-SYS_REQ_FILE="requirements/system-requirements.txt"
-if [ -f "$SYS_REQ_FILE" ]; then
-  echo "🛠️  Installing system requirements from $SYS_REQ_FILE..."
-  while read -r pkg; do
-    if [ -n "$pkg" ] && [[ ! "$pkg" =~ ^# ]]; then
-      echo "[system] Installing: $pkg"
-      sudo apt-get install -y "$pkg"
-    fi
-  done < "$SYS_REQ_FILE"
-  echo "✅ System requirements installed."
+if [ -f requirements/system-requirements.txt ]; then
+  echo "🔧 Installing system requirements..."
+  grep -v '^#' requirements/system-requirements.txt | xargs -r apt-get install -y
 else
-  echo "⚠️  $SYS_REQ_FILE not found. Skipping system requirements install."
+  echo "⚠️  requirements/system-requirements.txt not found. Skipping system requirements install."
 fi
 
 # --- Step 2: Install Python Requirements ---
