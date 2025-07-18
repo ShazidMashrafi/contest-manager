@@ -9,6 +9,7 @@ from pathlib import Path
 from contest_manager.utils.utils import check_root
 from contest_manager.utils.internet_handler import *
 from contest_manager.utils.usb_handler import *
+from contest_manager.utils.persistence_handler import remove_persistence
 
 CONFIG_DIR = Path(__file__).parent.parent.parent / 'config'
 BLACKLIST_TXT = CONFIG_DIR / 'blacklist.txt'
@@ -35,6 +36,8 @@ def main():
     check_root()
 
     print("\n🧹 Unrestricting Contest Environment\n" + ("="*40))
+    print(f"Removing persistence for user: {args.user} ...")
+    remove_persistence(args.user)
     print(f"Removing internet restriction for user: {args.user} ...")
     unrestrict_internet(args.user, BLACKLIST_TXT, verbose=args.verbose)
     print(f"Removing USB restriction for user: {args.user} ...")
