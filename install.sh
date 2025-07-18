@@ -4,6 +4,9 @@ set -e
 
 # --- Config ---
 BASE_CMD="contest-manager"
+if [ -n "$1" ]; then
+  BASE_CMD="$1"
+fi
 PKG_NAME="contest-environment-manager"
 
 # --- Root Check ---
@@ -35,13 +38,11 @@ echo "🛠️  [Step 2/2] Installing $PKG_NAME ..."
 pip3 install --break-system-packages -e .
 
 # --- Final Instructions ---
-echo "🎉✅ Setup complete! You can now use contest-manager CLI commands."
+echo "🎉✅ Setup complete! You can now use $BASE_CMD CLI commands."
 echo ""
 echo "👉 Usage:"
-echo "   contest-manager --help         # Show all commands"
-echo "   sudo contest-manager setup     # Set up contest user and environment"
-echo "   sudo contest-manager restrict  # Apply contest restrictions"
-echo "   contest-manager status         # Check restriction status"
-echo "   sudo contest-manager unrestrict # Remove restrictions"
-echo "   sudo contest-manager start-restriction # Start persistent restriction service"
-echo "   sudo contest-manager update-restriction # Update persistent restriction service"
+echo "   $BASE_CMD --help         # Show all commands"
+echo "   sudo $BASE_CMD setup     # Set up contest user and environment"
+echo "   sudo $BASE_CMD restrict  # Apply contest restrictions"
+echo "   $BASE_CMD status         # Check restriction status"
+echo "   sudo $BASE_CMD unrestrict # Remove restrictions"
