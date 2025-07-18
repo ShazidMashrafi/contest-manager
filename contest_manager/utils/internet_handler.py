@@ -173,28 +173,33 @@ def unrestrict_internet(user, blacklist_path, verbose=False):
     except Exception:
         print(f"❌ User {user} not found.")
         return
+    summary = {}
     for table in ["iptables", "ip6tables"]:
-        while True:
+        removed = 0
+        # List all rules in OUTPUT chain
+        try:
+            result = subprocess.run([table, "-S", "OUTPUT"], capture_output=True, text=True)
+            rules = result.stdout.splitlines()
+        except Exception:
+            rules = []
+        # Collect all matching rules
+        matching_rules = []
+        for rule in rules:
+            if f"-m owner --uid-owner {uid}" in rule and "-j DROP" in rule:
+                matching_rules.append(rule)
+        # Remove all matching rules
+        for rule in matching_rules:
+            # Remove '-A OUTPUT ' prefix
+            rule_spec = rule.replace(f"-A OUTPUT ", "").split()
+            delete_cmd = [table, "-D", "OUTPUT"] + rule_spec
             try:
-                result = subprocess.run([table, "-S", "OUTPUT"], capture_output=True, text=True)
-                rules = result.stdout.splitlines()
-                found = False
-                for rule in rules:
-                    if f"-m owner --uid-owner {uid}" in rule and "-j DROP" in rule:
-                        delete_cmd = [table, "-D", "OUTPUT"] + rule.replace(f"-A OUTPUT ", "").split()
-                        try:
-                            subprocess.run(delete_cmd, check=False)
-                            if verbose:
-                                print(f"Removed rule: {table} {' '.join(delete_cmd)}")
-                            found = True
-                            break  # After deleting, restart loop to avoid shifting
-                        except Exception:
-                            pass
-                if not found:
-                    break  # No more rules to delete
+                proc = subprocess.run(delete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                removed += 1
             except Exception:
-                break
-    print("✅ All internet restrictions removed for user.")
+                pass
+        summary[table] = removed
+    print(f"✅ All internet restrictions removed for user.")
+    print(f"Summary: iptables rules removed: {summary['iptables']}, ip6tables rules removed: {summary['ip6tables']}")
 
 
 def internet_restriction_check(user):

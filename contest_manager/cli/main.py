@@ -51,7 +51,12 @@ Examples:
     status_parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
 
     start_restriction_parser = subparsers.add_parser('start-restriction', help='Start restriction system at boot (for persistence)')
+    start_restriction_parser.add_argument('user', nargs='?', default='participant', help='Username to restrict (default: participant)')
+    start_restriction_parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
+
     update_restriction_parser = subparsers.add_parser('update-restriction', help='Update internet restrictions (refresh iptables rules)')
+    update_restriction_parser.add_argument('user', nargs='?', default='participant', help='Username to update restrictions for (default: participant)')
+    update_restriction_parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
 
     args = parser.parse_args()
 
@@ -77,8 +82,10 @@ Examples:
             sys.argv = [sys.argv[0]] + [args.user] + (['--verbose'] if args.verbose else [])
             status_main()
         elif args.command == "start-restriction":
+            sys.argv = [sys.argv[0]] + [args.user] + (['--verbose'] if getattr(args, 'verbose', False) else [])
             start_restriction_main()
         elif args.command == "update-restriction":
+            sys.argv = [sys.argv[0]] + [args.user] + (['--verbose'] if getattr(args, 'verbose', False) else [])
             update_restriction_main()
         else:
             parser.print_help()

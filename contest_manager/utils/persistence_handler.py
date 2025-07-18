@@ -17,7 +17,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart={cli_cmd} start-restriction {user}
+    ExecStart=contest-manager start-restriction {user}
 RemainAfterExit=true
 
 [Install]
@@ -35,7 +35,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart={cli_cmd} update-restriction {user}
+    ExecStart=contest-manager update-restriction {user}
 """
     update_service_path = systemd_dir / f"contest-update-restriction-{user}.service"
     with open(update_service_path, 'w') as f:
