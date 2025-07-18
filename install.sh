@@ -16,16 +16,37 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 
-REQ_FILE="requirements.txt"
+
+
+# --- Step 1: Install System Requirements ---
+echo "\n🧩 STEP 1: Install System Requirements\n========================================"
+SYS_REQ_FILE="requirements/system-requirements.txt"
+if [ -f "$SYS_REQ_FILE" ]; then
+  echo "🛠️  Installing system requirements from $SYS_REQ_FILE..."
+  while read -r pkg; do
+    if [ -n "$pkg" ] && [[ ! "$pkg" =~ ^# ]]; then
+      echo "[system] Installing: $pkg"
+      sudo apt-get install -y "$pkg"
+    fi
+  done < "$SYS_REQ_FILE"
+  echo "✅ System requirements installed."
+else
+  echo "⚠️  $SYS_REQ_FILE not found. Skipping system requirements install."
+fi
+
+# --- Step 2: Install Python Requirements ---
+echo "\n🐍 STEP 2: Install Python Requirements\n========================================"
+REQ_FILE="requirements/requirements.txt"
 if [ -f "$REQ_FILE" ]; then
-  echo "� Installing Python requirements..."
+  echo "� Installing Python requirements from $REQ_FILE..."
   pip3 install --break-system-packages -r "$REQ_FILE"
+  echo "✅ Python requirements installed."
 else
   echo "⚠️  $REQ_FILE not found. Skipping Python requirements install."
 fi
 
-# --- Uninstall Previous Package ---
-echo "🔄 [Step 1/2] Uninstalling previous $PKG_NAME package (if any)..."
+# --- Step 3: Uninstall Previous Package ---
+echo "\n🔄 STEP 3: Uninstall Previous $PKG_NAME Package\n========================================"
 if pip3 show $PKG_NAME > /dev/null 2>&1; then
   echo "🗑️  Removing old $PKG_NAME..."
   pip3 uninstall --break-system-packages -y $PKG_NAME
@@ -33,9 +54,10 @@ else
   echo "✅ No previous installation of $PKG_NAME found."
 fi
 
-# --- Install Package ---
-echo "🛠️  [Step 2/2] Installing $PKG_NAME ..."
+# --- Step 4: Install Package ---
+echo "\n🛠️  STEP 4: Install $PKG_NAME Package\n========================================"
 pip3 install --break-system-packages -e .
+echo "✅ $PKG_NAME installed."
 
 
 # --- Symlink for Custom Base Command ---
