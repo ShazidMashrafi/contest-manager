@@ -2,3 +2,6 @@
 # One command per line, as you would use with 'snap install'
 # Example:
 # code --classic
+
+code --classic
+sublime-text --classic

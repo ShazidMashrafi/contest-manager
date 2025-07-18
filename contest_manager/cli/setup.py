@@ -32,7 +32,7 @@ def main():
     setup_package_sources(APT_TXT)
 
     print("\n💻 STEP 3: Applications\n" + ("="*40))
-    install_apt_softwares()
+    install_all_softwares()
 
     print("\n🧩 STEP 4: VS Code Extensions\n" + ("="*40))
     install_vscode_extensions(VSCODE_EXTENSIONS)

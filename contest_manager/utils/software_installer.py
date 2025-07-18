@@ -40,43 +40,6 @@ def install_apt_softwares(apt_file, verbose=False):
         for pkg in failed:
             print(f"  - {pkg}")
 
-def install_deb_softwares(deb_file, verbose=False):
-    print("\n================= [DEB INSTALL] ==================")
-    """Download and install .deb packages listed in deb_file (one URL per line)."""
-    if not Path(deb_file).exists():
-        print(f"[deb] Package list not found: {deb_file}")
-        return
-    installed = []
-    failed = []
-    with open(deb_file) as f:
-        for line in f:
-            url = line.strip()
-            if not url or url.startswith('#'):
-                continue
-            try:
-                print(f"[deb] 🛠️ Downloading: {url}")
-                with tempfile.NamedTemporaryFile(suffix='.deb', delete=False) as tmp:
-                    response = requests.get(url, stream=True)
-                    if response.status_code == 200:
-                        for chunk in response.iter_content(chunk_size=8192):
-                            tmp.write(chunk)
-                        tmp_path = tmp.name
-                        print(f"[deb] 🛠️ Installing: {tmp_path}")
-                        subprocess.run(['apt', 'install', '-y', tmp_path], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        print(f"[deb] ✅ Installed: {url}")
-                        installed.append(url)
-                    else:
-                        print(f"[deb] ❌ Failed to download: {url} (HTTP {response.status_code})")
-                        failed.append(url)
-            except Exception as e:
-                print(f"[deb] ❌ Failed: {url} ({e})")
-                failed.append(url)
-    print(f"[deb] Install summary: ✅ {len(installed)} succeeded, ❌ {len(failed)} failed.")
-    if failed:
-        print("[deb] ❌ Failed packages:")
-        for url in failed:
-            print(f"  - {url}")
-
 def install_snap_softwares(snap_file, verbose=False):
     print("\n==================== [SNAP INSTALL] ===================")
     """Install snap packages listed in snap_file."""
@@ -138,10 +101,8 @@ def install_flatpak_softwares(flatpak_file, verbose=False):
 def install_all_softwares(verbose=False):
     config_dir = Path(__file__).parent.parent.parent / 'config'
     apt_file = config_dir / 'apt.txt'
-    deb_file = config_dir / 'deb.txt'
     snap_file = config_dir / 'snap.txt'
     flatpak_file = config_dir / 'flatpak.txt'
     install_apt_softwares(apt_file, verbose=verbose)
-    install_deb_softwares(deb_file, verbose=verbose)
     install_snap_softwares(snap_file, verbose=verbose)
     install_flatpak_softwares(flatpak_file, verbose=verbose)
