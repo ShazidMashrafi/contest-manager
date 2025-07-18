@@ -5,10 +5,10 @@ import pwd
 import subprocess
 import dns.resolver
 from pathlib import Path
+import json
 
 def get_subdomains(domain):
     """Generate common subdomain names for a domain."""
-    # This is a static list; for real use, you may want to parse from config or use a DNS enumeration tool
     common_subs = ["www", "mail", "drive", "chat", "api", "blog", "m", "app", "cdn", "static", "dev", "test"]
     return [f"{sub}.{domain}" for sub in common_subs]
 
@@ -29,24 +29,15 @@ def resolve_ips(domain):
         pass
     return ips
 
-def restrict_internet(user, blacklist_path, verbose=False, persist=False):
+def store_ip_cache(user, blacklist_path, cache_path, verbose=False):
     """
-    Restrict internet access for the given user based on blacklist file.
-    Block only the domains and subdomains listed in the blacklist, for both IPv4 and IPv6, and block DNS/DoH for those domains.
-    If persist=True, only apply restrictions (for systemd persistence).
+    Generate subdomains, resolve IPs, and store all results in a cache file.
     """
-    print(f"🌐 Restricting internet access for user: {user}")
-    print(f"🌐 It might take a moment... Please sit back and relax.")
     if verbose:
-        print(f"[restrict_internet] Reading blacklist from {blacklist_path}")
+        print(f"[store_ip_cache] Reading blacklist from {blacklist_path}")
     if not Path(blacklist_path).exists():
         print(f"❌ Blacklist file {blacklist_path} not found.")
-        return
-    try:
-        uid = pwd.getpwnam(user).pw_uid
-    except Exception:
-        print(f"❌ User {user} not found.")
-        return
+        return False
     domains = []
     with open(blacklist_path) as f:
         for line in f:
@@ -54,47 +45,76 @@ def restrict_internet(user, blacklist_path, verbose=False, persist=False):
             if line and not line.startswith('#'):
                 domains.append(line)
     if not domains:
-        print("⚠️  No domains found in blacklist. Skipping internet restriction.")
-        return
-    blocked = []
+        print("⚠️  No domains found in blacklist. Skipping IP cache.")
+        return False
+    allow_patterns = ['static.', 'cdn.', 'fonts.']
+    targets = []
     for domain in domains:
-        allow_patterns = ['static.', 'cdn.', 'fonts.']
         if any(domain.startswith(p) for p in allow_patterns):
             continue
-        # Block domain and common subdomains
-        targets = [domain] + get_subdomains(domain)
-        for target in targets:
-            ips = resolve_ips(target)
-            if ips:
-                for ip in ips:
-                    try:
-                        if ':' in ip:
-                            subprocess.run(["ip6tables", "-A", "OUTPUT", "-d", ip, "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
-                        else:
-                            subprocess.run(["iptables", "-A", "OUTPUT", "-d", ip, "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
-                    except Exception:
-                        pass
-            # Block DNS requests for the domain/subdomain
-            try:
-                subprocess.run(["iptables", "-A", "OUTPUT", "-p", "udp", "--dport", "53", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
-            except Exception:
-                pass
-            # Block DNS over HTTPS (DoH) for the domain/subdomain (TCP 443)
-            try:
-                subprocess.run(["iptables", "-A", "OUTPUT", "-p", "tcp", "--dport", "443", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
-                subprocess.run(["ip6tables", "-A", "OUTPUT", "-p", "tcp", "--dport", "443", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
-            except Exception:
-                pass
-        blocked.append(domain)
-    if blocked:
-        print("Blocked domains and subdomains for user:")
-        for domain in blocked:
-            print(f"  - {domain}")
-            subs = get_subdomains(domain)
-            for sub in subs:
-                print(f"    • {sub}")
-    print("✅ Internet restrictions applied for user.")
+        targets.append(domain)
+        targets.extend(get_subdomains(domain))
+    ip_map = {}
+    for target in targets:
+        ip_map[target] = list(resolve_ips(target))
+    with open(cache_path, 'w') as f:
+        json.dump(ip_map, f, indent=2)
+    if verbose:
+        print(f"IP cache saved to {cache_path}")
+    return True
 
+def apply_restrictions_from_cache(user, cache_path, verbose=False):
+    """
+    Apply iptables/ip6tables rules for all cached IPs for the user.
+    """
+    if not Path(cache_path).exists():
+        print(f"❌ IP cache file {cache_path} not found.")
+        return False
+    try:
+        uid = pwd.getpwnam(user).pw_uid
+    except Exception:
+        print(f"❌ User {user} not found.")
+        return False
+    with open(cache_path) as f:
+        ip_map = json.load(f)
+    for target, ips in ip_map.items():
+        for ip in ips:
+            try:
+                if ':' in ip:
+                    subprocess.run(["ip6tables", "-A", "OUTPUT", "-d", ip, "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+                else:
+                    subprocess.run(["iptables", "-A", "OUTPUT", "-d", ip, "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+            except Exception:
+                pass
+        # Block DNS requests for the domain/subdomain
+        try:
+            subprocess.run(["iptables", "-A", "OUTPUT", "-p", "udp", "--dport", "53", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+        except Exception:
+            pass
+        # Block DNS over HTTPS (DoH) for the domain/subdomain (TCP 443)
+        try:
+            subprocess.run(["iptables", "-A", "OUTPUT", "-p", "tcp", "--dport", "443", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+            subprocess.run(["ip6tables", "-A", "OUTPUT", "-p", "tcp", "--dport", "443", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
+        except Exception:
+            pass
+    if verbose:
+        print(f"Applied restrictions for user {user} from cache {cache_path}")
+    print("✅ Internet restrictions applied for user from cache.")
+    return True
+
+def restrict_internet(user, blacklist_path, cache_path=None, verbose=False):
+    """
+    Restrict internet access for the given user based on blacklist file.
+    Uses store_ip_cache and apply_restrictions_from_cache.
+    """
+    if not cache_path:
+        print("❌ cache_path must be provided.")
+        return False
+    success = store_ip_cache(user, blacklist_path, cache_path, verbose=verbose)
+    if not success:
+        print("Failed to store IP cache. No restrictions applied.")
+        return False
+    return apply_restrictions_from_cache(user, cache_path, verbose=verbose)
 
 def unrestrict_internet(user, blacklist_path, verbose=False):
     """

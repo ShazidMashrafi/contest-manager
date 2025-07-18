@@ -11,8 +11,8 @@ from contest_manager.cli.reset import main as reset_main
 from contest_manager.cli.restrict import main as restrict_main
 from contest_manager.cli.unrestrict import main as unrestrict_main
 from contest_manager.cli.status import main as status_main
-from contest_manager.cli.start import main as start_main
-from contest_manager.cli.update import main as update_main
+from contest_manager.cli.start_restrictions import main as start_restrictions_main
+from contest_manager.cli.update_restrictions import main as update_restrictions_main
 
 def main():
     parser = argparse.ArgumentParser(
@@ -50,8 +50,8 @@ Examples:
     status_parser.add_argument('user', nargs='?', default='participant', help='Username (default: participant)')
     status_parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
 
-    start_parser = subparsers.add_parser('start', help='Start restriction system at boot (for persistence)')
-    update_parser = subparsers.add_parser('update', help='Update internet restrictions (refresh iptables rules)')
+    start_restrictions_parser = subparsers.add_parser('start-restrictions', help='Start restriction system at boot (for persistence)')
+    update_restrictions_parser = subparsers.add_parser('update-restrictions', help='Update internet restrictions (refresh iptables rules)')
 
     args = parser.parse_args()
 
@@ -76,10 +76,10 @@ Examples:
         elif args.command == "status":
             sys.argv = [sys.argv[0]] + [args.user] + (['--verbose'] if args.verbose else [])
             status_main()
-        elif args.command == "start":
-            start_main()
-        elif args.command == "update":
-            update_main()
+        elif args.command == "start-restrictions":
+            start_restrictions_main()
+        elif args.command == "update-restrictions":
+            update_restrictions_main()
         else:
             parser.print_help()
             sys.exit(1)
