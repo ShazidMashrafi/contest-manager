@@ -4,9 +4,6 @@ set -e
 
 # --- Config ---
 BASE_CMD="contest-manager"
-if [ -n "$1" ]; then
-  BASE_CMD="$1"
-fi
 PKG_NAME="contest-environment-manager"
 
 # --- Root Check ---

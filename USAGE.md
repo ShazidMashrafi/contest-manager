@@ -23,13 +23,7 @@ To install the Contest Environment Manager CLI, run:
 sudo bash install.sh
 ```
 
-You can also specify a custom base command:
 
-```bash
-sudo bash install.sh mdpc
-```
-
-If no argument is given, it defaults to `contest-manager`.
 
 
 ## Setup environment
