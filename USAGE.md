@@ -168,12 +168,12 @@ sudo contest-manager reset contestant
 ---
 
 
-## Start Restrictions
+## Start Restriction
 
 To start the restriction system at boot (for persistence):
 
 ```bash
-sudo contest-manager start-restrictions [username]
+sudo contest-manager start-restriction [username]
 ```
 
 - This command is automatically used by the contest-manager system (e.g., via systemd/cron) to ensure restrictions persist after reboot.
@@ -181,19 +181,19 @@ sudo contest-manager start-restrictions [username]
 
 **Example:**
 ```bash
-sudo contest-manager start-restrictions
-sudo contest-manager start-restrictions contestant
+sudo contest-manager start-restriction
+sudo contest-manager start-restriction contestant
 ```
 
 ---
 
 
-## Update Restrictions
+## Update Restriction
 
-To update internet restrictions (refresh iptables rules):
+To update internet restriction (refresh iptables rules):
 
 ```bash
-sudo contest-manager update-restrictions
+sudo contest-manager update-restriction
 ```
 
 - This command is automatically used by the contest-manager system (e.g., via systemd/cron) to keep internet restrictions up to date as IPs change.
@@ -201,7 +201,7 @@ sudo contest-manager update-restrictions
 
 **Example:**
 ```bash
-sudo contest-manager update-restrictions
+sudo contest-manager update-restriction
 ```
 
 ---

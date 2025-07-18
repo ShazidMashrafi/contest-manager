@@ -29,6 +29,52 @@ def resolve_ips(domain):
         pass
     return ips
 
+def update_ip_cache(user, blacklist_path, cache_path, verbose=False):
+    """
+    Update the stored IP cache for the user by merging new IPs for all domains and subdomains.
+    Preserves old entries and adds new ones.
+    """
+    if verbose:
+        print(f"[update_ip_cache] Updating IP cache from {blacklist_path} to {cache_path}")
+    # Load existing cache if present
+    ip_map = {}
+    if Path(cache_path).exists():
+        with open(cache_path) as f:
+            try:
+                ip_map = json.load(f)
+            except Exception:
+                ip_map = {}
+    # Read domains from blacklist
+    if not Path(blacklist_path).exists():
+        print(f"❌ Blacklist file {blacklist_path} not found.")
+        return False
+    domains = []
+    with open(blacklist_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                domains.append(line)
+    if not domains:
+        print("⚠️  No domains found in blacklist. Skipping IP cache update.")
+        return False
+    allow_patterns = ['static.', 'cdn.', 'fonts.']
+    targets = []
+    for domain in domains:
+        if any(domain.startswith(p) for p in allow_patterns):
+            continue
+        targets.append(domain)
+        targets.extend(get_subdomains(domain))
+    # Merge new IPs for each target
+    for target in targets:
+        new_ips = set(resolve_ips(target))
+        old_ips = set(ip_map.get(target, []))
+        ip_map[target] = list(old_ips.union(new_ips))
+    with open(cache_path, 'w') as f:
+        json.dump(ip_map, f, indent=2)
+    if verbose:
+        print(f"IP cache updated and saved to {cache_path}")
+    return True
+
 def store_ip_cache(user, blacklist_path, cache_path, verbose=False):
     """
     Generate subdomains, resolve IPs, and store all results in a cache file.
