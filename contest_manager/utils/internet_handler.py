@@ -176,27 +176,21 @@ def unrestrict_internet(user, blacklist_path, verbose=False):
     summary = {}
     for table in ["iptables", "ip6tables"]:
         removed = 0
-        # List all rules in OUTPUT chain
         try:
             result = subprocess.run([table, "-S", "OUTPUT"], capture_output=True, text=True)
             rules = result.stdout.splitlines()
         except Exception:
             rules = []
-        # Collect all matching rules
-        matching_rules = []
-        for rule in rules:
-            if f"-m owner --uid-owner {uid}" in rule and "-j DROP" in rule:
-                matching_rules.append(rule)
-        # Remove all matching rules
-        for rule in matching_rules:
-            # Remove '-A OUTPUT ' prefix
+        # Collect all rules for this UID
+        rules_to_delete = [rule for rule in rules if f"-m owner --uid-owner {uid}" in rule]
+        for rule in rules_to_delete:
             rule_spec = rule.replace(f"-A OUTPUT ", "").split()
             delete_cmd = [table, "-D", "OUTPUT"] + rule_spec
             try:
                 proc = subprocess.run(delete_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 removed += 1
             except Exception:
-                pass
+                continue
         summary[table] = removed
     print(f"✅ All internet restrictions removed for user.")
     print(f"Summary: iptables rules removed: {summary['iptables']}, ip6tables rules removed: {summary['ip6tables']}")
