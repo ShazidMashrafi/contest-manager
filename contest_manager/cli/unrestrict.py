@@ -35,7 +35,7 @@ def main():
     check_root()
 
     print("\n🧹 STEP 1: Remove Internet Restriction\n" + ("="*40))
-    unrestrict_dnsmasq_and_firewall(args.user, BLACKLIST_TXT, verbose=args.verbose)
+    unrestrict_internet(args.user, BLACKLIST_TXT, verbose=args.verbose)
     print("✅ Internet restriction removed.\n")
 
     print("\n🧹 STEP 2: Remove USB Restriction\n" + ("="*40))
