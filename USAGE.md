@@ -10,6 +10,8 @@ This guide explains how to use the Contest Environment Manager CLI to set up, re
 - [Unrestrict](#unrestrict)
 - [Reset](#reset)
 - [Status](#status)
+- [Start](#start)
+- [Update](#update)
 
 ---
 
@@ -161,6 +163,42 @@ sudo contest-manager reset [username]
 ```bash
 sudo contest-manager reset
 sudo contest-manager reset contestant
+```
+
+---
+
+## Start
+
+To start the restriction system at boot (for persistence):
+
+```bash
+sudo contest-manager start
+```
+
+- This command is automatically used by the contest-manager system (e.g., via systemd/cron) to ensure restrictions persist after reboot.
+- You can also run it manually if needed.
+
+**Example:**
+```bash
+sudo contest-manager start
+```
+
+---
+
+## Update
+
+To update internet restrictions (refresh iptables rules):
+
+```bash
+sudo contest-manager update
+```
+
+- This command is automatically used by the contest-manager system (e.g., via systemd/cron) to keep internet restrictions up to date as IPs change.
+- You can also run it manually if needed.
+
+**Example:**
+```bash
+sudo contest-manager update
 ```
 
 ---

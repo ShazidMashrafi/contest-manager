@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Contest Environment Manager - Main CLI Entry Point
@@ -12,6 +11,8 @@ from contest_manager.cli.reset import main as reset_main
 from contest_manager.cli.restrict import main as restrict_main
 from contest_manager.cli.unrestrict import main as unrestrict_main
 from contest_manager.cli.status import main as status_main
+from contest_manager.cli.start import main as start_main
+from contest_manager.cli.update import main as update_main
 
 def main():
     parser = argparse.ArgumentParser(
@@ -49,6 +50,9 @@ Examples:
     status_parser.add_argument('user', nargs='?', default='participant', help='Username (default: participant)')
     status_parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
 
+    start_parser = subparsers.add_parser('start', help='Start restriction system at boot (for persistence)')
+    update_parser = subparsers.add_parser('update', help='Update internet restrictions (refresh iptables rules)')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -70,9 +74,12 @@ Examples:
             sys.argv = [sys.argv[0]] + [args.user] + (['--verbose'] if args.verbose else [])
             unrestrict_main()
         elif args.command == "status":
-
             sys.argv = [sys.argv[0]] + [args.user] + (['--verbose'] if args.verbose else [])
             status_main()
+        elif args.command == "start":
+            start_main()
+        elif args.command == "update":
+            update_main()
         else:
             parser.print_help()
             sys.exit(1)
