@@ -62,6 +62,14 @@ This command will:
     grub-customizer(ppa:danielrichter2007/grub-customizer)
     ```
 
+**config/deb.txt**
+  - List of .deb package URLs to download and install, one per line.
+  - Example:
+    ```
+    https://update.code.visualstudio.com/latest/linux-deb-x64/stable
+    ```
+  - Lines starting with `#` are comments and ignored.
+
 **config/snap.txt**
   - List of snap packages to install, one per line, as you would use with `snap install`.
   - Example:

@@ -8,7 +8,7 @@ from pathlib import Path
 from contest_manager.utils.utils import *
 from contest_manager.utils.user_manager import *
 from contest_manager.utils.package_manager_setup import *
-from contest_manager.utils.package_installer import *
+from contest_manager.utils.software_installer import *
 from contest_manager.utils.vscode_extensions_handler import *
 
 
@@ -32,9 +32,7 @@ def main():
     setup_package_sources(APT_TXT)
 
     print("\n💻 STEP 3: Applications\n" + ("="*40))
-    install_apt_packages(APT_TXT)
-    install_snap_packages(SNAP_TXT)
-    install_flatpak_packages(FLATPAK_TXT)
+    install_apt_softwares()
 
     print("\n🧩 STEP 4: VS Code Extensions\n" + ("="*40))
     install_vscode_extensions(VSCODE_EXTENSIONS)
