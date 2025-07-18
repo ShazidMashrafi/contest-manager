@@ -14,3 +14,5 @@ micro
 codeblocks
 grub-customizer(ppa:danielrichter2007/grub-customizer)
 firefox
+sublime-text(ppa:https://download.sublimetext.com/)
+code(ppa:https://packages.microsoft.com/repos/code)

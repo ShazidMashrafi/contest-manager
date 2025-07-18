@@ -1,5 +1,4 @@
 # List of snap packages to install
 # One command per line, as you would use with 'snap install'
-
-code --classic
-sublime-text --classic
+# Example:
+# code --classic

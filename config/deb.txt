@@ -2,5 +2,3 @@
 # One URL per line, as you would use with 'wget' or a browser
 # Example:
 # https://update.code.visualstudio.com/latest/linux-deb-x64/stable
-
-https://update.code.visualstudio.com/latest/linux-deb-x64/stable
