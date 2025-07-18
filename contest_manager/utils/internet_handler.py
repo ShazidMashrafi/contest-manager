@@ -1,11 +1,50 @@
 """
 Internet restriction utilities for contest-manager
 """
+
 import pwd
 import subprocess
 import dns.resolver
 from pathlib import Path
 import json
+
+def get_user_cache_path(user):
+    """Return the cache path for a user."""
+    cache_dir = Path(__file__).parent.parent.parent / 'cache'
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir / f"ip_cache_{user}.json"
+
+def get_targets_from_blacklist(blacklist_path):
+    """Read blacklist, filter domains, and generate targets."""
+    if not Path(blacklist_path).exists():
+        print(f"❌ Blacklist file {blacklist_path} not found.")
+        return []
+    domains = []
+    with open(blacklist_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                domains.append(line)
+    if not domains:
+        print("⚠️  No domains found in blacklist. Skipping IP cache.")
+        return []
+    allow_patterns = ['static.', 'cdn.', 'fonts.']
+    targets = []
+    for domain in domains:
+        if any(domain.startswith(p) for p in allow_patterns):
+            continue
+        targets.append(domain)
+        targets.extend(get_subdomains(domain))
+    return targets
+
+def resolve_targets_to_ip_map(targets, existing_ip_map=None):
+    """Resolve IPs for each target, optionally merging with an existing map."""
+    ip_map = existing_ip_map if existing_ip_map else {}
+    for target in targets:
+        new_ips = set(resolve_ips(target))
+        old_ips = set(ip_map.get(target, []))
+        ip_map[target] = list(old_ips.union(new_ips))
+    return ip_map
 
 def get_subdomains(domain):
     """Generate common subdomain names for a domain."""
@@ -33,14 +72,10 @@ def update_ip_cache(user, blacklist_path, verbose=False):
     """
     Update the stored IP cache for the user by merging new IPs for all domains and subdomains.
     Preserves old entries and adds new ones.
-    Cache file location: /cache/ip_cache_{user}.json
     """
-    cache_dir = Path(__file__).parent.parent.parent / 'cache'
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_path = cache_dir / f"ip_cache_{user}.json"
+    cache_path = get_user_cache_path(user)
     if verbose:
         print(f"[update_ip_cache] Updating IP cache from {blacklist_path} to {cache_path}")
-    # Load existing cache if present
     ip_map = {}
     if cache_path.exists():
         with open(cache_path) as f:
@@ -48,81 +83,38 @@ def update_ip_cache(user, blacklist_path, verbose=False):
                 ip_map = json.load(f)
             except Exception:
                 ip_map = {}
-    # Read domains from blacklist
-    if not Path(blacklist_path).exists():
-        print(f"❌ Blacklist file {blacklist_path} not found.")
+    targets = get_targets_from_blacklist(blacklist_path)
+    if not targets:
         return False, None
-    domains = []
-    with open(blacklist_path) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#'):
-                domains.append(line)
-    if not domains:
-        print("⚠️  No domains found in blacklist. Skipping IP cache update.")
-        return False, None
-    allow_patterns = ['static.', 'cdn.', 'fonts.']
-    targets = []
-    for domain in domains:
-        if any(domain.startswith(p) for p in allow_patterns):
-            continue
-        targets.append(domain)
-        targets.extend(get_subdomains(domain))
-    # Merge new IPs for each target
-    for target in targets:
-        new_ips = set(resolve_ips(target))
-        old_ips = set(ip_map.get(target, []))
-        ip_map[target] = list(old_ips.union(new_ips))
+    ip_map = resolve_targets_to_ip_map(targets, ip_map)
     with open(cache_path, 'w') as f:
         json.dump(ip_map, f, indent=2)
     if verbose:
         print(f"IP cache updated and saved to {cache_path}")
-    return True
+    return True, str(cache_path)
 
 def create_ip_cache(user, blacklist_path, verbose=False):
     """
     Create a fresh IP cache for the user. Overwrites any previous cache.
-    Cache file location: /cache/ip_cache_{user}.json
     """
-    from pathlib import Path
-    import json
-    cache_dir = Path(__file__).parent.parent.parent / 'cache'
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_path = cache_dir / f"ip_cache_{user}.json"
+    cache_path = get_user_cache_path(user)
     if verbose:
         print(f"[create_ip_cache] Reading blacklist from {blacklist_path}")
-    if not Path(blacklist_path).exists():
-        print(f"❌ Blacklist file {blacklist_path} not found.")
+    targets = get_targets_from_blacklist(blacklist_path)
+    if not targets:
         return False, None
-    domains = []
-    with open(blacklist_path) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#'):
-                domains.append(line)
-    if not domains:
-        print("⚠️  No domains found in blacklist. Skipping IP cache.")
-        return False, None
-    allow_patterns = ['static.', 'cdn.', 'fonts.']
-    targets = []
-    for domain in domains:
-        if any(domain.startswith(p) for p in allow_patterns):
-            continue
-        targets.append(domain)
-        targets.extend(get_subdomains(domain))
-    ip_map = {}
-    for target in targets:
-        ip_map[target] = list(resolve_ips(target))
+    ip_map = resolve_targets_to_ip_map(targets)
     with open(cache_path, 'w') as f:
         json.dump(ip_map, f, indent=2)
     if verbose:
         print(f"IP cache created at {cache_path}")
     return True, str(cache_path)
 
-def apply_restrictions_from_cache(user, cache_path, verbose=False):
+def apply_restrictions_from_cache(user, verbose=False):
     """
     Apply iptables/ip6tables rules for all cached IPs for the user.
     """
+    cache_path = get_user_cache_path(user)
     if not Path(cache_path).exists():
         print(f"❌ IP cache file {cache_path} not found.")
         return False
@@ -158,19 +150,16 @@ def apply_restrictions_from_cache(user, cache_path, verbose=False):
     print("✅ Internet restrictions applied for user from cache.")
     return True
 
-def restrict_internet(user, blacklist_path, cache_path=None, verbose=False):
+def restrict_internet(user, blacklist_path, verbose=False):
     """
     Restrict internet access for the given user based on blacklist file.
-    Uses store_ip_cache and apply_restrictions_from_cache.
+    Uses create_ip_cache and apply_restrictions_from_cache.
     """
-    if not cache_path:
-        print("❌ cache_path must be provided.")
-        return False
-    success, new_cache_path = create_ip_cache(user, blacklist_path, verbose=verbose)
+    success, _ = create_ip_cache(user, blacklist_path, verbose=verbose)
     if not success:
         print("Failed to create IP cache. No restrictions applied.")
         return False
-    return apply_restrictions_from_cache(user, new_cache_path, verbose=verbose)
+    return apply_restrictions_from_cache(user, verbose=verbose)
 
 def unrestrict_internet(user, blacklist_path, verbose=False):
     """

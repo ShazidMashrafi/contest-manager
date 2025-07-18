@@ -32,9 +32,8 @@ def main():
     args = parser.parse_args()
     check_root()
     user = args.user
-    cache_path = CONFIG_DIR / f"ip_cache_{user}.json"
     print("\n🌐 Applying internet restrictions from cache\n" + ("="*40))
-    apply_restrictions_from_cache(user, cache_path, verbose=args.verbose)
+    apply_restrictions_from_cache(user, verbose=args.verbose)
     print("\n🔌 Blocking USB storage devices\n" + ("="*40))
     restrict_usb_storage_device(user, verbose=args.verbose)
     print("\n✅ Internet and USB restrictions applied from cache.\n")
