@@ -13,11 +13,12 @@ def start_persistence(user):
     start_service = f"""
 [Unit]
 Description=Contest Start Restriction for user {user}
-After=network.target
+DefaultDependencies=no
+After=basic.target
 
 [Service]
 Type=oneshot
-    ExecStart=contest-manager start-restriction {user}
+ExecStart=contest-manager start-restriction {user}
 RemainAfterExit=true
 
 [Install]
@@ -31,11 +32,12 @@ WantedBy=multi-user.target
     update_service = f"""
 [Unit]
 Description=Contest Update Restriction for user {user}
-After=network.target
+DefaultDependencies=no
+After=basic.target
 
 [Service]
 Type=oneshot
-    ExecStart=contest-manager update-restriction {user}
+ExecStart=contest-manager update-restriction {user}
 """
     update_service_path = systemd_dir / f"contest-update-restriction-{user}.service"
     with open(update_service_path, 'w') as f:
@@ -64,6 +66,12 @@ WantedBy=timers.target
     subprocess.run(['systemctl', 'start', f'contest-start-restriction-{user}.service'], check=True)
     subprocess.run(['systemctl', 'enable', f'contest-update-restriction-{user}.timer'], check=True)
     subprocess.run(['systemctl', 'start', f'contest-update-restriction-{user}.timer'], check=True)
+    # Disable ufw to prevent interference with iptables rules
+    try:
+        subprocess.run(['systemctl', 'disable', '--now', 'ufw'], check=True)
+        print("✅ ufw disabled to ensure contest restrictions are enforced.")
+    except Exception as e:
+        print(f"⚠️  Could not disable ufw automatically: {e}\nPlease run: sudo systemctl disable --now ufw")
     print(f"✅ Persistence enabled: start-restriction at boot, update-restriction every 30 min for user {user}")
 
 
