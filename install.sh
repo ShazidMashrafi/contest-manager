@@ -20,7 +20,6 @@ fi
 # --- Step 1: Install System Requirements ---
 echo "\n🧩 STEP 1: Install System Requirements\n========================================"
 if [ -f requirements/system-requirements.txt ]; then
-  echo "🔧 Installing system requirements..."
   grep -v '^#' requirements/system-requirements.txt | xargs -r apt-get install -y
 else
   echo "⚠️  requirements/system-requirements.txt not found. Skipping system requirements install."

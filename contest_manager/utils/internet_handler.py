@@ -37,11 +37,20 @@ def restrict_internet(user, blacklist_path, verbose=False):
             f.write(f"address=/{domain}/::\n")
     if verbose:
         print(f"[dnsmasq] Blacklist config written to {dnsmasq_conf_path}")
-    # 2. Restart dnsmasq to apply changes
-    subprocess.run(["systemctl", "restart", "dnsmasq"], check=False)
-    if verbose:
+    # 2. Ensure systemd-resolved is stopped to avoid port 53 conflict
+    result = subprocess.run(["systemctl", "is-active", "systemd-resolved"], capture_output=True, text=True)
+    if result.stdout.strip() == "active":
+        subprocess.run(["systemctl", "stop", "systemd-resolved"], check=False)
+        subprocess.run(["systemctl", "disable", "systemd-resolved"], check=False)
+        if verbose:
+            print("[systemd-resolved] Stopped and disabled to avoid DNS port conflict.")
+    # 3. Restart dnsmasq to apply changes
+    dnsmasq_result = subprocess.run(["systemctl", "restart", "dnsmasq"], capture_output=True, text=True)
+    if dnsmasq_result.returncode != 0:
+        print(f"❌ dnsmasq failed to start: {dnsmasq_result.stderr.strip()}")
+    elif verbose:
         print("[dnsmasq] Service restarted.")
-    # 3. Add minimal firewall rule to force DNS usage and block direct IP access
+    # 4. Add minimal firewall rule to force DNS usage and block direct IP access
     # Example: block all outbound except DNS (port 53)
     subprocess.run(["iptables", "-A", "OUTPUT", "-m", "owner", "--uid-owner", user, "!", "-p", "udp", "--dport", "53", "-j", "DROP"], check=False)
     subprocess.run(["ip6tables", "-A", "OUTPUT", "-m", "owner", "--uid-owner", user, "!", "-p", "udp", "--dport", "53", "-j", "DROP"], check=False)
