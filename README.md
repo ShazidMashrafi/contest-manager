@@ -4,17 +4,6 @@ A robust, modular system for setting up a PC for onsite competitive programming 
 
 ---
 
-
-git clone <github.com/shazidmashrafi/contest-manager>
-cd contest-manager
-sudo bash install.sh
-
-# Usage examples:
-sudo contest-manager setup --user contestant
-sudo contest-manager restrict --user contestant
-contest-manager status --user contestant
-sudo contest-manager unrestrict --user contestant
-
 ## 🚀 Quick Start
 
 
