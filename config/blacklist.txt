@@ -11,7 +11,7 @@ yahoo.com
 yandex.com
 baidu.com
 
-# AI Bots
+# AI
 openai.com
 chat.openai.com
 chatgpt.com
@@ -21,18 +21,26 @@ chatgpt.com
 anthropic.com
 perplexity.ai
 
-# Code Hosting/Forums
+# Code Hosting
 github.com
 gitlab.com
 bitbucket.org
 stackoverflow.com
 stackexchange.com
-reddit.com
 discord.com
-medium.com
 ideone.com
 
-# Social Media (optional, for extra safety)
+# Learning Sites
+reddit.com
+medium.com
+tutorialspoint.com
+geeksforgeeks.org
+cp-algorithms.com
+usaco.org
+w3schools.com
+
+
+# Social Media
 facebook.com
 twitter.com
 instagram.com
