@@ -1,0 +1,14 @@
+Here is what the restric command needs to do:
+1. Needs to block internet access to the sites listed in /config/blacklist
+2. The sites in blacklist may have ipv4, ipv6, dynamic ip. I need to block all of that.
+3. I also need to block the subdomains of the sites in the blacklist while only allowing subdomains like fonts, cdn, static
+4. I need to block the usb memory devices, the current implementation should work properly
+5. I need these restrictions to persists after reboot, or better yet don't delete them when device shuts down
+
+Here is the what unrestrict command needs to do:
+1. Unrestrict any restrictions the restrict command implemented
+
+Both the commands should:
+1. Work on a specific user.
+2. is reliable
+3. The code is modular, broken into functions for easy maintenance
