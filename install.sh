@@ -15,7 +15,6 @@ fi
 # --- Ensure python3 and pip3 are installed ---
 if ! command -v python3 >/dev/null 2>&1 || ! command -v pip3 >/dev/null 2>&1; then
   echo "📦 Installing python3 and pip3..."
-  apt-get update -qq
   apt-get install -y python3 python3-pip
 fi
 
