@@ -14,18 +14,15 @@ fi
 
 # --- Ensure apt-get is available and update package lists ---
 echo "🔧 Updating system package lists..."
-apt-get update -qq || apt-get update
+apt-get update -qq
 
-# --- Ensure python3 and python3-pip are installed ---
-echo "📦 Ensuring python3 and python3-pip are installed..."
+echo "📦 Installing essentials (python3, python3-pip)..."
+apt-get install -y --no-install-recommends python3 python3-pip
+
+# Verify python3 is available
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "   Installing python3..."
-  apt-get install -y python3 || { echo "❌ Failed to install python3"; exit 1; }
-fi
-
-if ! command -v pip3 >/dev/null 2>&1 && ! python3 -m pip --version >/dev/null 2>&1; then
-  echo "   Installing python3-pip..."
-  apt-get install -y python3-pip || apt-get install -y python3-distutils python3-dev && python3 -m ensurepip --default-pip || true
+  echo "❌ Failed to install python3"
+  exit 1
 fi
 
 # Use python3 -m pip for reliability
@@ -34,10 +31,9 @@ PIP_BIN="python3 -m pip"
 # --- Final pip availability check ---
 if ! $PIP_BIN --version >/dev/null 2>&1; then
   echo "❌ Failed to install or find pip for python3."
-  echo "💡 Troubleshooting:"
-  echo "    1. sudo apt-get update"
-  echo "    2. sudo apt-get install -y python3-pip"
-  echo "    3. sudo python3 -m pip install --upgrade pip"
+  echo "💡 Try manually:"
+  echo "    sudo apt-get update"
+  echo "    sudo apt-get install -y python3-pip"
   exit 1
 fi
 
