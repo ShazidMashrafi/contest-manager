@@ -3,3 +3,4 @@
 ms-vscode.cpptools
 ms-python.python
 redhat.java
+formulahendry.code-runner
