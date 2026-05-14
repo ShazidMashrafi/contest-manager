@@ -12,24 +12,14 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# --- Check pip version for --break-system-packages support ---
-PIP_VERSION=$(pip3 --version | grep -oP '\d+\.\d+' | head -1)
-PIP_MAJOR=$(echo $PIP_VERSION | cut -d. -f1)
-PIP_MINOR=$(echo $PIP_VERSION | cut -d. -f2)
-
-# --break-system-packages added in pip 23.1
-if [ "$PIP_MAJOR" -gt 23 ] || ([ "$PIP_MAJOR" -eq 23 ] && [ "$PIP_MINOR" -ge 1 ]); then
-  PIP_FLAG="--break-system-packages"
-else
-  PIP_FLAG=""
-  echo "⚠️  pip version $PIP_VERSION is older than 23.1. Skipping --break-system-packages flag."
-  echo "💡 To update pip: sudo pip3 install --upgrade pip"
-fi
+# --- Upgrade pip first ---
+echo "📦 Upgrading pip..."
+pip3 install --upgrade pip
 
 REQ_FILE="requirements.txt"
 if [ -f "$REQ_FILE" ]; then
-  echo "� Installing Python requirements..."
-  pip3 install $PIP_FLAG -r "$REQ_FILE"
+  echo "📦 Installing Python requirements..."
+  pip3 install --break-system-packages -r "$REQ_FILE"
 else
   echo "⚠️  $REQ_FILE not found. Skipping Python requirements install."
 fi
@@ -38,14 +28,14 @@ fi
 echo "🔄 [Step 1/2] Uninstalling previous $PKG_NAME package (if any)..."
 if pip3 show $PKG_NAME > /dev/null 2>&1; then
   echo "🗑️  Removing old $PKG_NAME..."
-  pip3 uninstall $PIP_FLAG -y $PKG_NAME
+  pip3 uninstall --break-system-packages -y $PKG_NAME
 else
   echo "✅ No previous installation of $PKG_NAME found."
 fi
 
 # --- Install Package ---
 echo "🛠️  [Step 2/2] Installing $PKG_NAME ..."
-pip3 install $PIP_FLAG -e .
+pip3 install --break-system-packages -e .
 
 # --- Final Instructions ---
 echo "🎉✅ Setup complete! You can now use contest-manager CLI commands."
