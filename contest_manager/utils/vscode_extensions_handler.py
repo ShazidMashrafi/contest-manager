@@ -4,6 +4,15 @@ import shutil
 import subprocess
 from pathlib import Path
 
+
+def get_target_user():
+    """Return the user profile where extensions should be installed."""
+    if os.geteuid() == 0:
+        sudo_user = os.environ.get("SUDO_USER")
+        if sudo_user and sudo_user != "root":
+            return sudo_user
+    return None
+
 def find_vscode_cli():
     """Find VS Code CLI executable (code or code-insiders)."""
     for exe in ["code", "code-insiders"]:
@@ -20,10 +29,25 @@ def is_vscode_installed():
     """Return True if VS Code CLI is available."""
     return find_vscode_cli() is not None
 
-def get_installed_extensions(code_path):
+def get_installed_extensions(code_path, target_user=None):
     """Return a set of installed extension IDs."""
     try:
-        result = subprocess.run([code_path, "--list-extensions"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        if target_user:
+            result = subprocess.run(
+                ["sudo", "-u", target_user, code_path, "--list-extensions"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True,
+            )
+        else:
+            result = subprocess.run(
+                [code_path, "--list-extensions"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True,
+            )
         return set(result.stdout.strip().splitlines())
     except Exception:
         return set()
@@ -39,17 +63,24 @@ def read_extensions(ext_file):
                     ext_ids.append(line)
     return ext_ids
 
-def install_extension(code_path, ext_id):
+def install_extension(code_path, ext_id, target_user=None):
     """Install a single extension."""
     try:
-        cmd = [code_path, "--install-extension", ext_id]
-        # If running as root, add --no-sandbox and --user-data-dir
-        if os.geteuid() == 0:
+        cmd = [code_path, "--install-extension", ext_id, "--force"]
+
+        if target_user:
+            cmd = ["sudo", "-u", target_user] + cmd
+        elif os.geteuid() == 0:
+            # Fallback: avoid crashing when root runs code directly.
             user_data_dir = "/tmp/vscode-root"
             os.makedirs(user_data_dir, exist_ok=True)
             cmd += ["--no-sandbox", f"--user-data-dir={user_data_dir}"]
+
         subprocess.run(cmd, check=True)
-        print(f"[vscode] ✅ Installed extension: {ext_id}")
+        if target_user:
+            print(f"[vscode] ✅ Installed extension for {target_user}: {ext_id}")
+        else:
+            print(f"[vscode] ✅ Installed extension: {ext_id}")
         return True
     except subprocess.CalledProcessError as e:
         print(f"[vscode] ❌ Failed to install {ext_id}: {e}")
@@ -62,10 +93,14 @@ def install_vscode_extensions(ext_file):
         print("[vscode] VS Code CLI not found. Skipping extension install.")
         return
     print(f"[vscode] Found VS Code CLI: {code_path}")
+    target_user = get_target_user()
+    if target_user:
+        print(f"[vscode] Installing extensions for user: {target_user}")
+
     ext_ids = read_extensions(ext_file)
-    installed_exts = get_installed_extensions(code_path)
+    installed_exts = get_installed_extensions(code_path, target_user)
     for ext_id in ext_ids:
         if ext_id in installed_exts:
             print(f"[vscode] Already installed: {ext_id}")
         else:
-            install_extension(code_path, ext_id)
+            install_extension(code_path, ext_id, target_user)
