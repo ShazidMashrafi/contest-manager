@@ -41,10 +41,13 @@ def get_targets_from_blacklist(blacklist_path):
 def resolve_targets_to_ip_map(targets, existing_ip_map=None):
     """Resolve IPs for each target, optionally merging with an existing map."""
     ip_map = existing_ip_map if existing_ip_map else {}
-    for target in targets:
+    total = len(targets)
+    for idx, target in enumerate(targets, 1):
+        print(f"  🔍 Analyzing {idx}/{total}: {target}...", end='\r')
         new_ips = set(resolve_ips(target))
         old_ips = set(ip_map.get(target, []))
         ip_map[target] = list(old_ips.union(new_ips))
+    print(f"  ✅ Analyzed all {total} targets{' ' * 30}")
     return ip_map
 
 def get_subdomains(domain):
@@ -101,9 +104,13 @@ def create_ip_cache(user, blacklist_path, verbose=False):
     cache_path = get_user_cache_path(user)
     if verbose:
         print(f"[create_ip_cache] Reading blacklist from {blacklist_path}")
+    
+    print("📝 Reading blacklist domains...")
     targets = get_targets_from_blacklist(blacklist_path)
     if not targets:
         return False, None
+    
+    print(f"🌐 Resolving {len(targets)} domain(s) to IP addresses (this may take a moment)...")
     ip_map = resolve_targets_to_ip_map(targets)
     with open(cache_path, 'w') as f:
         json.dump(ip_map, f, indent=2)
@@ -124,9 +131,14 @@ def apply_restrictions_from_cache(user, verbose=False):
     except Exception:
         print(f"❌ User {user} not found.")
         return False
+    
     with open(cache_path) as f:
         ip_map = json.load(f)
-    for target, ips in ip_map.items():
+    
+    total_rules = len(ip_map)
+    print(f"🔒 Applying firewall rules for {total_rules} domain(s)...")
+    for idx, (target, ips) in enumerate(ip_map.items(), 1):
+        print(f"  🛡️  Blocking {idx}/{total_rules}: {target}...", end='\r')
         for ip in ips:
             try:
                 if ':' in ip:
@@ -146,9 +158,10 @@ def apply_restrictions_from_cache(user, verbose=False):
             subprocess.run(["ip6tables", "-A", "OUTPUT", "-p", "tcp", "--dport", "443", "-m", "string", "--string", target, "--algo", "bm", "-m", "owner", "--uid-owner", str(uid), "-j", "DROP"], check=True)
         except Exception:
             pass
+    
+    print(f"  ✅ All {total_rules} firewall rules applied{' ' * 30}")
     if verbose:
         print(f"Applied restrictions for user {user} from cache {cache_path}")
-    print("✅ Internet restrictions applied for user from cache.")
     return True
 
 def restrict_internet(user, blacklist_path, verbose=False):
